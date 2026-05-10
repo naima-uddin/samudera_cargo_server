@@ -310,7 +310,7 @@ exports.createBooking = async (req, res) => {
             receiver: receiver || {},
             
             courier: courier || {
-                company: 'Cargo Logistics Group',
+                company: 'Samudera Traffic Co., Ltd.s Group',
                 serviceType: serviceType || 'standard'
             },
             
@@ -361,7 +361,7 @@ exports.createBooking = async (req, res) => {
         if (customerRecipients.length > 0) {
             await sendTemplateEmailPerRecipient({
                 recipients: customerRecipients,
-                subject: '✅ Booking Request Received - Cargo Logistics',
+                subject: '✅ Booking Request Received - Samudera Traffic Co., Ltd.s',
                 template: 'booking-received',
                 data: {
                     bookingNumber: booking.bookingNumber,
@@ -853,7 +853,7 @@ exports.acceptQuote = async (req, res) => {
                 },
                 
                 courier: {
-                    company: booking.courier?.company || 'Cargo Logistics Group',
+                    company: booking.courier?.company || 'Samudera Traffic Co., Ltd.s Group',
                     serviceType: booking.courier?.serviceType || booking.serviceType || 'standard'
                 },
                 
@@ -1037,9 +1037,11 @@ try {
         
         
         const companyInfo = {
-            name: 'Cargo Logistics Group',
-            address: '8825 STANFORD BLVD SUITE 306',
-            city: 'COLUMBIA MD 21045 USA',
+            name: 'Samudera Traffic Co., Ltd.s Group',
+            address: 'Green Tower, 9th floor, 3656/27-28
+Rama IV Road',
+            city: 'Klongton-Klong Toey
+Bangkok 10110, Thailand',
             phone: '+1-647-362-7735',
             email: 'info@cargologistics.com',
             website: 'www.cargologistics.com'
@@ -1070,9 +1072,11 @@ if (!pdfBuffer && invoice) {
     try {
         console.log('   🔁 Retrying PDF generation before sending emails...');
         const fallbackCompanyInfo = {
-            name: 'Cargo Logistics Group',
-            address: '8825 STANFORD BLVD SUITE 306',
-            city: 'COLUMBIA MD 21045 USA',
+            name: 'Samudera Traffic Co., Ltd.s Group',
+            address: 'Green Tower, 9th floor, 3656/27-28
+Rama IV Road',
+            city: 'Klongton-Klong Toey
+Bangkok 10110, Thailand',
             phone: '+1-647-362-7735',
             email: 'info@cargologistics.com',
             website: 'www.cargologistics.com'
@@ -1100,7 +1104,7 @@ if (pdfBuffer && invoice) {
 const customerRecipients = getCustomerNotificationRecipients(booking, req.user?.email);
 if (customerRecipients.length > 0) {
     const emailData = {
-        subject: '🎉 Booking Confirmed! - Cargo Logistics',
+        subject: '🎉 Booking Confirmed! - Samudera Traffic Co., Ltd.s',
         template: 'booking-confirmed-customer',
         data: {
             customerName: booking.sender?.name || 'Customer',
@@ -1138,7 +1142,7 @@ if (customerRecipients.length > 0) {
             try {
                 await sendEmail({
                     to: booking.receiver.email,
-                    subject: '📦 Your Shipment is Confirmed - Cargo Logistics',
+                    subject: '📦 Your Shipment is Confirmed - Samudera Traffic Co., Ltd.s',
                     template: 'receiver-shipment-confirmed',
                     data: {
                         receiverName: booking.receiver.name || 'Valued Customer',
@@ -2234,7 +2238,7 @@ exports.sendInvoiceEmail = async (req, res) => {
         // Send email
         await sendEmail({
             to: recipientEmail,
-            subject: `🧾 Invoice ${invoice.invoiceNumber} from Cargo Logistics`,
+            subject: `🧾 Invoice ${invoice.invoiceNumber} from Samudera Traffic Co., Ltd.s`,
             template: 'invoice-email',
             data: {
                 customerName: invoice.customerId?.firstName || 'Customer',
@@ -2245,7 +2249,7 @@ exports.sendInvoiceEmail = async (req, res) => {
                 // invoiceUrl: `${process.env.FRONTEND_URL}/invoices/${invoice._id}`,
                 pdfUrl: invoice.pdfUrl,
                 message: message || 'Please find your invoice attached.',
-                companyName: 'Cargo Logistics'
+                companyName: 'Samudera Traffic Co., Ltd.s'
             }
         });
 

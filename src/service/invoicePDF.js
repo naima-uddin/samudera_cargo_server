@@ -56,8 +56,10 @@ const formatDate = (date) => {
 // PDF Component
 const InvoicePDF = ({ invoice, companyInfo }) => {
   const info = companyInfo || {
-    name: 'Cargo Logistics Group',
-    address: '8825 STANFORD BLVD SUITE 306 | COLUMBIA MD 21045 USA',
+    name: 'Samudera Traffic Co., Ltd.s Group',
+    address: 'Green Tower, 9th floor, 3656/27-28
+Rama IV Road | Klongton-Klong Toey
+Bangkok 10110, Thailand',
     phone: '+1-647-362-7735',
     email: 'info@cargologistics.com'
   };

@@ -1773,7 +1773,7 @@ exports.createShipment = async (req, res) => {
       
       // Courier info
       courier: {
-        company: courier?.company || 'Cargo Logistics Group',
+        company: courier?.company || 'Samudera Traffic Co., Ltd.s Group',
         serviceType: serviceType || courier?.serviceType || 'standard'
       },
       

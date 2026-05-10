@@ -210,8 +210,8 @@ const newShipmentWarehouseTemplate = (data) => {
                     </div>
                     
                     <div class="footer">
-                        <p>This is an automated notification from Cargo Logistics Warehouse Management System.</p>
-                        <p>© ${new Date().getFullYear()} Cargo Logistics. All rights reserved.</p>
+                        <p>This is an automated notification from Samudera Traffic Co., Ltd.s Warehouse Management System.</p>
+                        <p>© ${new Date().getFullYear()} Samudera Traffic Co., Ltd.s. All rights reserved.</p>
                     </div>
                 </div>
             </body>

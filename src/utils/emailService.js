@@ -793,7 +793,7 @@ const templates = {
                         </div>
                         
                         <p style="font-size: 16px; color: #475569;">
-                            ${data.senderName} has sent a shipment to you through <strong>Cargo Logistics Group</strong>. 
+                            ${data.senderName} has sent a shipment to you through <strong>Samudera Traffic Co., Ltd.s Group</strong>. 
                             Your package has been confirmed and is being prepared for delivery.
                         </p>
 
@@ -879,11 +879,11 @@ const templates = {
 
                     <!-- Footer -->
                     <div class="footer">
-                        <div class="company">Cargo Logistics Group</div>
+                        <div class="company">Samudera Traffic Co., Ltd.s Group</div>
                         <p>Delivering Excellence Worldwide 🌍</p>
                         <p style="font-size: 12px; margin-top: 20px;">
                             This email was sent regarding a shipment to you.<br>
-                            &copy; ${new Date().getFullYear()} Cargo Logistics Group. All rights reserved.
+                            &copy; ${new Date().getFullYear()} Samudera Traffic Co., Ltd.s Group. All rights reserved.
                         </p>
                     </div>
                 </div>

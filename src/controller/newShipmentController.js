@@ -228,7 +228,7 @@ exports.createShipment = async (req, res) => {
             sender: bookingData.sender,
             receiver: bookingData.receiver,
             courier: {
-                company: bookingData.courier?.company || 'Cargo Logistics Group',
+                company: bookingData.courier?.company || 'Samudera Traffic Co., Ltd.s Group',
                 serviceType: bookingData.serviceType
             },
             status: bookingData.status || 'booking_requested',

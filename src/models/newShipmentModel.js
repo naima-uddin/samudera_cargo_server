@@ -295,7 +295,7 @@ const newShipmentSchema = new mongoose.Schema({
     courier: {
         company: {
             type: String,
-            default: 'Cargo Logistics Group'
+            default: 'Samudera Traffic Co., Ltd.s Group'
         },
         serviceType: {
             type: String,

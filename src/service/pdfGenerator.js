@@ -63,12 +63,14 @@ async function generateInvoicePDFBuffer(invoice, companyInfo, trackingNumber) {
             doc.fillColor('white')
                .fontSize(23)
                .font('Helvetica-Bold')
-               .text(companyInfo?.name || 'Cargo Logistics', 50, 28);
+               .text(companyInfo?.name || 'Samudera Traffic Co., Ltd.s', 50, 28);
             
             doc.fontSize(9)
                .font('Helvetica')
-               .text(companyInfo?.address || '8825 STANFORD BLVD SUITE 306', 50, 56)
-               .text(companyInfo?.city || 'COLUMBIA MD 21045 USA', 50, 69)
+               .text(companyInfo?.address || 'Green Tower, 9th floor, 3656/27-28
+Rama IV Road', 50, 56)
+               .text(companyInfo?.city || 'Klongton-Klong Toey
+Bangkok 10110, Thailand', 50, 69)
                .text(`Phone: ${companyInfo?.phone || '+1-647-362-7735'}`, 50, 82);
             
             doc.fillColor(colors.accent)

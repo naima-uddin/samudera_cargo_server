@@ -71,7 +71,7 @@ const generateInvoicePDF = async (shipment) => {
                 layout: 'portrait',
                 info: {
                     Title: `Invoice ${invoiceNumber}`,
-                    Author: 'Cargo Logistics Group'
+                    Author: 'Samudera Traffic Co., Ltd.s Group'
                 }
             });
             
@@ -99,8 +99,10 @@ const generateInvoicePDF = async (shipment) => {
                 .fontSize(6.5)
                 .font('Helvetica');
             
-            doc.text('Cargo Logistics Group', 380, yPosition + 2, { align: 'right', width: 155 });
-            doc.text('8825 STANFORD BLVD SUITE 306, COLUMBIA MD 21045 USA', 380, yPosition + 10, { align: 'right', width: 155 });
+            doc.text('Samudera Traffic Co., Ltd.s Group', 380, yPosition + 2, { align: 'right', width: 155 });
+            doc.text('Green Tower, 9th floor, 3656/27-28
+Rama IV Road, Klongton-Klong Toey
+Bangkok 10110, Thailand', 380, yPosition + 10, { align: 'right', width: 155 });
             doc.text('Tel: +1-647-362-7735', 380, yPosition + 18, { align: 'right', width: 155 });
             
             // INVOICE Badge - Compact

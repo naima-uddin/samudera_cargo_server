@@ -350,8 +350,8 @@ const shipmentSchema = new mongoose.Schema({
     courier: {
         company: {
             type: String,
-            enum: ['Cargo Logistics Group', 'DHL', 'FedEx', 'UPS', 'USPS', 'Other'],
-            default: 'Cargo Logistics Group'
+            enum: ['Samudera Traffic Co., Ltd.s Group', 'DHL', 'FedEx', 'UPS', 'USPS', 'Other'],
+            default: 'Samudera Traffic Co., Ltd.s Group'
         },
         serviceType: {
             type: String,
