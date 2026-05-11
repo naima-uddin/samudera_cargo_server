@@ -11,7 +11,7 @@ const mongoose = require('mongoose');
 const { generateInvoicePDFBuffer } = require('../service/pdfGenerator'); 
 const NewShipment = require('../models/newShipmentModel');
 const ManualShipment = require('../models/manualModel');
-const TRACK_NOTIFICATION_EMAIL = 'Tracking@samuderathai.com';
+const TRACK_NOTIFICATION_EMAIL = 'tracking@samuderathai.com';
 
 const normalizeEmail = (email) => {
     if (!email || typeof email !== 'string') return null;

@@ -5,7 +5,7 @@ const { generateInvoiceFromShipment, getPdfBuffer } = require('../utils/manualIn
 const { sendManualShippingStatusEmail } = require('../utils/emailService');
 const Booking = require('../models/bookingModel');
 const User = require('../models/userModel');
-const TRACK_NOTIFICATION_EMAIL = 'Tracking@samuderathai.com';
+const TRACK_NOTIFICATION_EMAIL = 'tracking@samuderathai.com';
 
 const normalizeEmail = (email) => {
   if (!email || typeof email !== 'string') return null;

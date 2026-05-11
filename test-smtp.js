@@ -14,7 +14,7 @@ console.log(`   SMTP_USER_INFO: ${process.env.SMTP_USER_INFO}`);
 console.log(`   SMTP_PASS_INFO: ${process.env.SMTP_PASS_INFO ? '***' + process.env.SMTP_PASS_INFO.slice(-3) : 'NOT SET'}`);
 
 // Test Tracking credentials
-console.log('\n🔧 Test 1: Tracking Email Account (Tracking@samuderathai.com)');
+console.log('\n🔧 Test 1: Tracking Email Account (tracking@samuderathai.com)');
 console.log('=========================================================');
 
 const trackingTransporter = nodemailer.createTransport({

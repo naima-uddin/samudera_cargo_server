@@ -1070,7 +1070,7 @@ const templates = {
                     </div>
                     <div class="footer">
                         <p>© ${new Date().getFullYear()} B2B Logistics. All rights reserved.</p>
-                        <p>Questions? Contact us at Tracking@samuderathai.com</p>
+                        <p>Questions? Contact us at tracking@samuderathai.com</p>
                     </div>
                 </div>
             </body>
@@ -1233,7 +1233,7 @@ const templates = {
                         <div class="info-box" style="background: #f0f0f0; border-left-color: #666;">
                             <h4>Need Help?</h4>
                             <p>If you have any questions about your shipment, please contact us at:<br>
-                            <strong>Email:</strong> Tracking@samuderathai.com</p>
+                            <strong>Email:</strong> tracking@samuderathai.com</p>
                         </div>
                     </div>
                 </div>
@@ -1293,7 +1293,7 @@ const templates = {
                         <div class="info-box" style="background: #f0f0f0; border-left-color: #666;">
                             <h4>Need Help?</h4>
                             <p>If you have any questions about your shipment, please contact us at:<br>
-                            <strong>Email:</strong> Tracking@samuderathai.com</p>
+                            <strong>Email:</strong> tracking@samuderathai.com</p>
                         </div>
                     </div>
                 </div>
@@ -1323,7 +1323,7 @@ const sendEmail = async ({ to, subject, template, data, attachments }, retries =
         
         // Prepare email options with attachments support
         const mailOptions = {
-            from: `"${process.env.EMAIL_FROM_NAME || 'B2B Logistics'}" <${process.env.EMAIL_FROM || 'Tracking@samuderathai.com'}>`,
+            from: `"${process.env.EMAIL_FROM_NAME || 'B2B Logistics'}" <${process.env.EMAIL_FROM || 'tracking@samuderathai.com'}>`,
             to: Array.isArray(to) ? to.join(', ') : to,
             replyTo: process.env.EMAIL_REPLY_TO || process.env.EMAIL_FROM,
             subject: emailContent.subject || subject,
@@ -1650,9 +1650,9 @@ const sendConsolidationStatusEmail = async (consolidationData) => {
             }
         }
 
-        // Send to tracking email (Tracking@samuderathai.com)
+        // Send to tracking email (tracking@samuderathai.com)
         try {
-            const trackingEmail = process.env.SMTP_USER || 'Tracking@samuderathai.com';
+            const trackingEmail = process.env.SMTP_USER || 'tracking@samuderathai.com';
             results.tracking = await sendEmail({
                 to: trackingEmail,
                 template: 'consolidation-status-update',
