@@ -616,6 +616,12 @@ exports.createConsolidation = async (req, res) => {
             containerNumber: finalContainerNumber,
             containerType: finalContainerType,
             sealNumber: finalSealNumber,
+            blNumber: req.body.blNumber || '',
+            blNumbers: Array.isArray(req.body.blNumbers)
+              ? req.body.blNumbers.filter(Boolean)
+              : req.body.blNumber
+                ? [req.body.blNumber]
+                : [],
             
             totalShipments: queueItems.length,
             totalPackages,

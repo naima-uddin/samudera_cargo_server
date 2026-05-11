@@ -149,8 +149,16 @@ const newShipmentSchema = new mongoose.Schema({
     // ========== CONTAINERS ==========
     containers: [{
         containerNumber: { type: String, default: '' },
-        sealNumber: { type: String, default: '' }
+        sealNumber: { type: String, default: '' },
+        blNumber: { type: String, default: '' }
     }],
+
+    transport: {
+        vesselName: { type: String, default: '' },
+        voyageNumber: { type: String, default: '' },
+        flightNumber: { type: String, default: '' },
+        carrierName: { type: String, default: '' }
+    },
     
     // ========== DATES ==========
     dates: {

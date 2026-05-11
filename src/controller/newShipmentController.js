@@ -195,17 +195,25 @@ exports.createShipment = async (req, res) => {
                 ? bookingData.containers
                   .map((container) => ({
                     containerNumber: container?.containerNumber || '',
-                    sealNumber: container?.sealNumber || ''
+                    sealNumber: container?.sealNumber || '',
+                    blNumber: container?.blNumber || container?.BLNumber || container?.bl_number || ''
                   }))
-                  .filter((container) => container.containerNumber || container.sealNumber)
+                  .filter((container) => container.containerNumber || container.sealNumber || container.blNumber)
                 : (Array.isArray(bookingData.shipmentDetails?.containers)
                   ? bookingData.shipmentDetails.containers
                     .map((container) => ({
                       containerNumber: container?.containerNumber || '',
-                      sealNumber: container?.sealNumber || ''
+                      sealNumber: container?.sealNumber || '',
+                      blNumber: container?.blNumber || container?.BLNumber || container?.bl_number || ''
                     }))
-                    .filter((container) => container.containerNumber || container.sealNumber)
+                    .filter((container) => container.containerNumber || container.sealNumber || container.blNumber)
                   : []),
+            transport: {
+                vesselName: bookingData.transport?.vesselName || bookingData.shipmentDetails?.vesselName || bookingData.vesselName || '',
+                voyageNumber: bookingData.transport?.voyageNumber || bookingData.shipmentDetails?.voyageNumber || bookingData.voyageNumber || '',
+                flightNumber: bookingData.transport?.flightNumber || bookingData.shipmentDetails?.flightNumber || '',
+                carrierName: bookingData.transport?.carrierName || bookingData.courier?.company || 'Samudera Traffic Co., Ltd.s Group'
+            },
             dates: {
                 estimatedDeparture: bookingData.dates?.estimatedDeparture,
                 estimatedArrival: bookingData.dates?.estimatedArrival
@@ -1088,9 +1096,10 @@ exports.updateShipmentStatus = async (req, res) => {
       ? containers
           .map((container) => ({
             containerNumber: container?.containerNumber || '',
-            sealNumber: container?.sealNumber || ''
+            sealNumber: container?.sealNumber || '',
+            blNumber: container?.blNumber || container?.BLNumber || container?.bl_number || ''
           }))
-          .filter((container) => container.containerNumber || container.sealNumber)
+          .filter((container) => container.containerNumber || container.sealNumber || container.blNumber)
       : null;
 
     // Allow shipment-level container updates even when the status does not change.
@@ -1164,6 +1173,13 @@ exports.updateShipmentStatus = async (req, res) => {
 
     if (normalizedContainers) {
       updateData.containers = normalizedContainers;
+    }
+
+    if (req.body.transport) {
+      updateData.transport = {
+        ...existingShipment.transport?.toObject?.(),
+        ...req.body.transport
+      };
     }
 
     // Handle lastActiveStatus for on_hold

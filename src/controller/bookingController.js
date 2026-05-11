@@ -318,7 +318,11 @@ exports.createBooking = async (req, res) => {
             pricingStatus: pricingStatus || 'pending',
             shipmentStatus: 'pending',
             
-            timeline: timeline || [{
+            transport: {
+            vesselName: req.body.transport?.vesselName || shipmentDetails?.vesselName || req.body.vesselName || '',
+            voyageNumber: req.body.transport?.voyageNumber || shipmentDetails?.voyageNumber || req.body.voyageNumber || ''
+        },
+        timeline: timeline || [{
                 status: 'booking_requested',
                 description: 'Booking request submitted',
                 updatedBy: req.user?._id || customer,

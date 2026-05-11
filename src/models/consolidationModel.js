@@ -43,6 +43,8 @@ const consolidationSchema = new mongoose.Schema({
         default: '20ft'
     },
     sealNumber: String,
+    blNumber: String,
+    blNumbers: [String],
     
     // Route Information
     originWarehouse: {
