@@ -984,7 +984,7 @@ const isValidStatusTransition = (currentStatus, newStatus) => {
 exports.updateShipmentStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status, notes, resumeTo, updateDateTime, containers, transport, transports, vesselName, voyageNumber } = req.body;
+    const { status, notes, resumeTo, updateDateTime, containers, transport, transports, vesselName, voyageNumber, bookingNumber } = req.body;
     const userId = req.user?._id || req.user?.id || 'system';
 
     const STATUS_ALIASES = {
@@ -995,13 +995,14 @@ exports.updateShipmentStatus = async (req, res) => {
     const normalizeStatus = (value) => STATUS_ALIASES[value] || value;
 
     const hasContainerUpdate = Array.isArray(containers) && containers.length > 0;
+    const hasBookingNumberUpdate = typeof bookingNumber === 'string' && bookingNumber.trim() !== '';
     const hasTransportUpdate = Boolean(transport || vesselName || voyageNumber);
 
-    // Allow updates when status is omitted if containers or transport details are provided.
-    if (!status && !hasContainerUpdate && !hasTransportUpdate) {
+    // Allow updates when status is omitted if containers, transport, or bookingNumber are provided.
+    if (!status && !hasContainerUpdate && !hasTransportUpdate && !hasBookingNumberUpdate) {
       return res.status(400).json({
         success: false,
-        message: 'Status is required unless updating shipment containers or transport details'
+        message: 'Status is required unless updating shipment containers, transport details, or booking number'
       });
     }
 
@@ -1183,6 +1184,10 @@ exports.updateShipmentStatus = async (req, res) => {
 
     if (normalizedContainers) {
       updateData.containers = normalizedContainers;
+    }
+
+    if (hasBookingNumberUpdate) {
+      updateData.bookingNumber = bookingNumber.trim();
     }
 
     if (hasTransportUpdate) {

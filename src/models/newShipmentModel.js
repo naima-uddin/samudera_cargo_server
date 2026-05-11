@@ -15,6 +15,10 @@ const newShipmentSchema = new mongoose.Schema({
         required: true,
         index: true
     },
+    bookingNumber: {
+        type: String,
+        sparse: true
+    },
     
     // ========== CUSTOMER INFO ==========
     customerInfo: {

@@ -3163,9 +3163,13 @@ exports.trackByNumber = async (req, res) => {
 
                 if (!nextContainer && !nextSeal && !nextBl) return;
 
-                if (!normalized.some((item) => item.containerNumber === nextContainer && item.sealNumber === nextSeal && item.blNumber === nextBl)) {
-                    normalized.push({ containerNumber: nextContainer, sealNumber: nextSeal, blNumber: nextBl });
-                }
+                // Dedup by containerNumber when present; otherwise dedup seal-only entries by sealNumber
+                const isDuplicate = nextContainer
+                    ? normalized.some((item) => item.containerNumber === nextContainer)
+                    : normalized.some((item) => !item.containerNumber && item.sealNumber === nextSeal);
+                if (isDuplicate) return;
+
+                normalized.push({ containerNumber: nextContainer, sealNumber: nextSeal, blNumber: nextBl });
             };
 
             const addSource = (source) => {
