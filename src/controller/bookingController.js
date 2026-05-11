@@ -3001,13 +3001,13 @@ exports.trackByNumber = async (req, res) => {
         let consolidationData = null;
         if (shipmentData.consolidationId) {
             consolidationData = await Consolidation.findById(shipmentData.consolidationId)
-                .select('consolidationNumber containerNumber containerType sealNumber status originWarehouse destinationPort shipments')
+                .select('consolidationNumber containerNumber containerNumbers containerType sealNumber sealNumbers vesselName voyageNumber blNumber blNumbers status originWarehouse destinationPort shipments')
                 .lean();
         }
 
         if (!consolidationData && shipmentData._id) {
             consolidationData = await Consolidation.findOne({ shipments: shipmentData._id })
-                .select('consolidationNumber containerNumber containerType sealNumber status originWarehouse destinationPort shipments')
+                .select('consolidationNumber containerNumber containerNumbers containerType sealNumber sealNumbers vesselName voyageNumber blNumber blNumbers status originWarehouse destinationPort shipments')
                 .lean();
         }
 
@@ -3024,21 +3024,16 @@ exports.trackByNumber = async (req, res) => {
 
             if (legacyShipmentQueries.length > 0) {
                 consolidationData = await Consolidation.findOne({ $or: legacyShipmentQueries })
-                    .select('consolidationNumber containerNumber containerType sealNumber status originWarehouse destinationPort shipments')
+                    .select('consolidationNumber containerNumber containerNumbers containerType sealNumber sealNumbers vesselName voyageNumber blNumber blNumbers status originWarehouse destinationPort shipments')
                     .lean();
             }
         }
 
         if (!shipmentContainers.length && consolidationData) {
+            // Pass the full consolidation object so normalizeContainerEntries handles
+            // containerNumbers[], sealNumbers[], blNumbers[] arrays as well as singles.
             shipmentContainers.push(
-                ...normalizeContainerEntries(
-                    consolidationData.containerNumber || consolidationData.sealNumber
-                        ? {
-                            containerNumber: consolidationData.containerNumber,
-                            sealNumber: consolidationData.sealNumber
-                        }
-                        : null
-                )
+                ...normalizeContainerEntries(consolidationData)
             );
         }
 
@@ -3184,17 +3179,25 @@ exports.trackByNumber = async (req, res) => {
                 ? {
                         number: consolidationData.consolidationNumber,
                         containerNumber: resolvedContainerNumber || consolidationData.containerNumber,
+                        containerNumbers: consolidationData.containerNumbers || [],
                         containerType: consolidationData.containerType,
                         sealNumber: resolvedSealNumber || consolidationData.sealNumber,
+                        sealNumbers: consolidationData.sealNumbers || [],
+                        vesselName: consolidationData.vesselName || null,
+                        voyageNumber: consolidationData.voyageNumber || null,
+                        blNumber: consolidationData.blNumber || null,
+                        blNumbers: consolidationData.blNumbers || [],
                         originWarehouse: consolidationData.originWarehouse,
                         destinationPort: consolidationData.destinationPort,
                         status: consolidationData.status
                     }
                 : null,
 
+            vesselName: consolidationData?.vesselName || shipmentData.transport?.vesselName || null,
+            voyageNumber: consolidationData?.voyageNumber || shipmentData.transport?.voyageNumber || null,
             containerNumber: resolvedContainerNumber,
             sealNumber: resolvedSealNumber,
-            blNumber: shipmentContainers[0]?.blNumber || null,
+            blNumber: shipmentContainers[0]?.blNumber || consolidationData?.blNumber || null,
             transport: shipmentData.transport || {},
             transportLegs: Array.isArray(shipmentData.transportLegs) ? shipmentData.transportLegs : [],
       
