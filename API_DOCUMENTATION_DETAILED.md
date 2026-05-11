@@ -1,4 +1,4 @@
-# B2B Cargo Server Detailed API Documentation
+# Samudera Cargo Cargo Server Detailed API Documentation
 
 ## Overview
 This is the full backend API reference for `B2B_Cargo_Server`.

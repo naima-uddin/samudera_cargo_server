@@ -98,7 +98,7 @@ class EmailService {
       console.log("📧 DEVELOPMENT MODE - EMAIL LOG");
       console.log("=".repeat(70));
       console.log("To:", email);
-      console.log("Subject: Your OTP Code - B2B Logistics");
+      console.log("Subject: Your OTP Code - Samudera Cargo Logistics");
       console.log("OTP:", otp);
       console.log("Expires in: 10 minutes");
       console.log("=".repeat(70));
@@ -117,9 +117,9 @@ class EmailService {
       const text = this.createRegistrationText(otp, name);
       
       const mailOptions = {
-        from: `"B2B Logistics" <${process.env.SMTP_USER}>`,
+        from: `"Samudera Cargo Logistics" <${process.env.SMTP_USER}>`,
         to: email,
-        subject: `Your OTP Code: ${otp} - B2B Logistics Registration`,
+        subject: `Your OTP Code: ${otp} - Samudera Cargo Logistics Registration`,
         html: html,
         text: text,
         headers: {
@@ -193,12 +193,12 @@ class EmailService {
       <body>
         <div class="container">
           <div class="header">
-            <h1 style="margin: 0;">B2B Logistics</h1>
+            <h1 style="margin: 0;">Samudera Cargo Logistics</h1>
             <p style="margin: 10px 0 0 0; opacity: 0.9;">Registration Verification</p>
           </div>
           <div class="content">
             <p>Hello <strong>${name}</strong>,</p>
-            <p>Your verification code for B2B Logistics registration is:</p>
+            <p>Your verification code for Samudera Cargo Logistics registration is:</p>
             
             <div class="otp-box">
               ${otp}
@@ -215,7 +215,7 @@ class EmailService {
             <p>If you didn't request this registration, please ignore this email.</p>
           </div>
           <div class="footer">
-            <p>© ${new Date().getFullYear()} B2B Logistics. All rights reserved.</p>
+            <p>© ${new Date().getFullYear()} Samudera Cargo Logistics. All rights reserved.</p>
             <p style="font-size: 11px; color: #999;">This is an automated message. Please do not reply.</p>
           </div>
         </div>
@@ -226,7 +226,7 @@ class EmailService {
 
   createRegistrationText(otp, name) {
     return `
-B2B Logistics - Registration OTP
+Samudera Cargo Logistics - Registration OTP
 
 Hello ${name},
 
@@ -238,7 +238,7 @@ This OTP will expire in 10 minutes.
 
 If you didn't request this registration, please ignore this email.
 
-© ${new Date().getFullYear()} B2B Logistics
+© ${new Date().getFullYear()} Samudera Cargo Logistics
     `;
   }
 
@@ -253,7 +253,7 @@ If you didn't request this registration, please ignore this email.
     
     try {
       await this.transporter.sendMail({
-        from: `"B2B Logistics" <${process.env.SMTP_USER}>`,
+        from: `"Samudera Cargo Logistics" <${process.env.SMTP_USER}>`,
         to: email,
         subject: `Password Reset OTP: ${otp}`,
         text: `Password reset OTP: ${otp}. Expires in 10 minutes.`
@@ -274,9 +274,9 @@ If you didn't request this registration, please ignore this email.
     
     try {
       await this.transporter.sendMail({
-        from: `"B2B Logistics" <${process.env.SMTP_USER}>`,
+        from: `"Samudera Cargo Logistics" <${process.env.SMTP_USER}>`,
         to: email,
-        subject: `Welcome to B2B Logistics, ${name}!`,
+        subject: `Welcome to Samudera Cargo Logistics, ${name}!`,
         text: `Welcome ${name}! Your account is now active.`
       });
       return { success: true, mode: 'production' };

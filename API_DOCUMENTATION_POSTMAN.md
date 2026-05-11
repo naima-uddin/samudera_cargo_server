@@ -1,6 +1,6 @@
-# B2B Cargo Server API (Grouped)
+# Samudera Cargo Cargo Server API (Grouped)
 
-Grouped Postman collection for B2B Cargo Server, with folders for Authentication, Users, Bookings, Invoices, Shipments, Warehouse, Consolidation, Tracking, and Damage Reports.
+Grouped Postman collection for Samudera Cargo Cargo Server, with folders for Authentication, Users, Bookings, Invoices, Shipments, Warehouse, Consolidation, Tracking, and Damage Reports.
 
 ## Environment Variables
 

@@ -1,4 +1,4 @@
-// B2B-Logistic_Server/src/routes/contactRoutes.js
+// Samudera Cargo-Logistic_Server/src/routes/contactRoutes.js
 
 const express = require('express');
 const router = express.Router();
@@ -141,7 +141,7 @@ const getCustomerEmailTemplate = (data, contactId) => {
           </p>
         </div>
         <div class="footer">
-          <p>© ${new Date().getFullYear()} B2B Logistics. All rights reserved.</p>
+          <p>© ${new Date().getFullYear()} Samudera Cargo Logistics. All rights reserved.</p>
         </div>
       </div>
     </body>
@@ -200,7 +200,7 @@ router.post('/contact', async (req, res) => {
     console.log('  To:', process.env.ADMIN_EMAIL || process.env.SMTP_USER_INFO);
     
     const adminInfo = await transporter.sendMail({
-      from: `"B2B Logistics Contact" <${process.env.SMTP_USER_INFO}>`,
+      from: `"Samudera Cargo Logistics Contact" <${process.env.SMTP_USER_INFO}>`,
       to: process.env.ADMIN_EMAIL || process.env.SMTP_USER_INFO,
       replyTo: formData.email,
       subject: `📬 New Contact Form - ${contactId} - ${formData.inquiryType}`,
@@ -214,7 +214,7 @@ router.post('/contact', async (req, res) => {
     console.log('  To:', formData.email);
     
     const customerInfo = await transporter.sendMail({
-      from: `"B2B Logistics Support" <${process.env.SMTP_USER_INFO}>`,
+      from: `"Samudera Cargo Logistics Support" <${process.env.SMTP_USER_INFO}>`,
       to: formData.email,
       subject: `We received your message - ${contactId}`,
       html: getCustomerEmailTemplate(formData, contactId)

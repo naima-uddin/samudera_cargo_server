@@ -107,7 +107,7 @@ const templates = {
                         <p><strong>Next Steps:</strong> Please review the booking details and provide a price quote within 24 hours.</p>
                     </div>
                     <div class="footer">
-                        <p>© ${new Date().getFullYear()} B2B Logistics. All rights reserved.</p>
+                        <p>© ${new Date().getFullYear()} Samudera Cargo Logistics. All rights reserved.</p>
                         <p>This is an automated message, please do not reply directly.</p>
                     </div>
                 </div>
@@ -140,7 +140,7 @@ const templates = {
                     </div>
                     <div class="content">
                         <h2>Dear ${data.customerName},</h2>
-                        <p>Thank you for choosing B2B Logistics. Your booking request has been received successfully. We'll talk to you and update your price quote very shortly.</p>
+                        <p>Thank you for choosing Samudera Cargo Logistics. Your booking request has been received successfully. We'll talk to you and update your price quote very shortly.</p>
                         
                         <div class="info-box">
                             <h3>Booking Summary:</h3>
@@ -1065,7 +1065,7 @@ const templates = {
                         </div>
                     </div>
                     <div class="footer">
-                        <p>© ${new Date().getFullYear()} B2B Logistics. All rights reserved.</p>
+                        <p>© ${new Date().getFullYear()} Samudera Cargo Logistics. All rights reserved.</p>
                         <p>Questions? Contact us at tracking@samuderathai.com</p>
                     </div>
                 </div>
@@ -1167,7 +1167,7 @@ const templates = {
                         </div>
                         
                         <div class="info-box" style="background: #d4edda; border-left-color: #28a745;">
-                            <h4>Thank you for choosing B2B Logistics!</h4>
+                            <h4>Thank you for choosing Samudera Cargo Logistics!</h4>
                             <p>We appreciate your business. If you have any questions about your delivery or need to file a claim, please contact us.</p>
                         </div>
                         
@@ -1357,9 +1357,9 @@ const templates = {
                             <p><strong>Destination:</strong> ${data.destination}</p>
                             ${data.sealNumber ? `<p><strong>Seal Number:</strong> ${data.sealNumber}</p>` : ''}
                         </div>
-                        <p>You will receive further tracking updates as your shipment progresses. Thank you for choosing B2B Logistics.</p>
+                        <p>You will receive further tracking updates as your shipment progresses. Thank you for choosing Samudera Cargo Logistics.</p>
                     </div>
-                    <div class="footer"><p>&copy; ${new Date().getFullYear()} B2B Logistics. All rights reserved.</p></div>
+                    <div class="footer"><p>&copy; ${new Date().getFullYear()} Samudera Cargo Logistics. All rights reserved.</p></div>
                 </div>
             </body>
             </html>
@@ -1642,7 +1642,7 @@ const templates = {
                             <p><strong>Tracking Number:</strong> ${data.trackingNumber}</p>
                             ${data.notes ? `<p><strong>Notes:</strong> ${data.notes}</p>` : ''}
                         </div>
-                        <p>Thank you for choosing B2B Logistics. We hope to serve you again.</p>
+                        <p>Thank you for choosing Samudera Cargo Logistics. We hope to serve you again.</p>
                         ${data.dashboardUrl ? `<div style="text-align: center; margin: 20px 0;"><a href="${data.dashboardUrl}" class="button">View Details</a></div>` : ''}
                     </div>
                 </div>
@@ -1688,7 +1688,7 @@ const sendEmail = async ({ to, subject, template, data, attachments }, retries =
         
         // Prepare email options with attachments support
         const mailOptions = {
-            from: `"${process.env.EMAIL_FROM_NAME || 'B2B Logistics'}" <${process.env.EMAIL_FROM || 'tracking@samuderathai.com'}>`,
+            from: `"${process.env.EMAIL_FROM_NAME || 'Samudera Cargo Logistics'}" <${process.env.EMAIL_FROM || 'tracking@samuderathai.com'}>`,
             to: Array.isArray(to) ? to.join(', ') : to,
             replyTo: process.env.EMAIL_REPLY_TO || process.env.EMAIL_FROM,
             subject: emailContent.subject || subject,
