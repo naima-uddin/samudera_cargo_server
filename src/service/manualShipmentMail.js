@@ -187,7 +187,7 @@ const getReceiverEmailTemplate = (shipment) => {
 };
 
 const getAdminEmailTemplate = (shipment) => {
-    const adminUrl = process.env.EMAIL_REPLY_TO || 'http://localhost:3000/admin';
+    const adminUrl = process.env.EMAIL_REPLY_TO || 'https://samuderathai.com/admin';
     
     return `
         <!DOCTYPE html>

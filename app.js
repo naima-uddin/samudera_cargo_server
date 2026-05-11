@@ -12,10 +12,9 @@ const app = express();
 const allowedOrigins = [
   'https://samuderathai.com',
   'https://api.samuderathai.com',
-  'http://localhost:3000',
+  'https://samuderathai.com',
   'http://localhost:3001',
   'http://localhost:8000',
-  'https://frabjous-tiramisu-93e5f9.netlify.app'
 ];
 
 const isAllowedOrigin = (origin) => {

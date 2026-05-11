@@ -4,7 +4,7 @@ const allowedOrigins = [
 	'https://samuderathai.com',
 	'https://api.samuderathai.com',
 	'https://remarkable-flan-2a9036.netlify.app',
-	'http://localhost:3000',
+	'https://samuderathai.com',
 	'http://localhost:3001'
 ];
 
