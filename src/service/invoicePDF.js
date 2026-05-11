@@ -60,7 +60,7 @@ const InvoicePDF = ({ invoice, companyInfo }) => {
     address: 'Green Tower, 9th floor, 3656/27-28
 Rama IV Road | Klongton-Klong Toey
 Bangkok 10110, Thailand',
-    phone: '+66 2 367 3747',
+    phone: '+66 2 105 6119',
     email: 'info@cargologistics.com'
   };
 
