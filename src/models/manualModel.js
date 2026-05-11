@@ -159,7 +159,29 @@ const manualShipmentSchema = new mongoose.Schema({
 
 // Index for faster search
 manualShipmentSchema.index({ trackingNumber: 1 });
+manualShipmentSchema.index({ bookingNumber: 1, sparse: true });
 manualShipmentSchema.index({ status: 1 });
 manualShipmentSchema.index({ 'dates.estimatedArrival': 1 });
+
+// Auto-generate bookingNumber in BKG-YYMM-NNNNN format (same as Booking model)
+manualShipmentSchema.pre('save', async function (next) {
+    if (this.bookingNumber) return next();
+
+    const date = new Date();
+    const year = date.getFullYear().toString().slice(-2);
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const prefix = `BKG-${year}${month}`;
+    const regex = new RegExp(`^${prefix}`);
+
+    const Booking = mongoose.model('Booking');
+    const [bkCount, manCount] = await Promise.all([
+        Booking.countDocuments({ bookingNumber: regex }),
+        mongoose.model('ManualShipment').countDocuments({ bookingNumber: regex })
+    ]);
+
+    const next_seq = bkCount + manCount + 1;
+    this.bookingNumber = `${prefix}-${next_seq.toString().padStart(5, '0')}`;
+    next();
+});
 
 module.exports = mongoose.model('ManualShipment', manualShipmentSchema);
