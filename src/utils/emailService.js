@@ -964,7 +964,7 @@ const templates = {
                         
                         
                         
-                        <p>Need help? Contact us at <a href="mailto:support@cargologisticscompany.com</a></p>
+                        <p>Need help? Contact us at <a href="mailto:info@samuderathai.com</a></p>
                     </div>
                 </div>
             </body>
@@ -1452,7 +1452,7 @@ const testEmailConnection = async () => {
                         totalCartons: 5,
                         totalWeight: 100,
                         dashboardUrl: process.env.FRONTEND_URL,
-                        supportEmail: process.env.SUPPORT_EMAIL || 'support@cargologisticscompany.com'
+                        supportEmail: process.env.SUPPORT_EMAIL || 'info@samuderathai.com'
                     }
                 });
 
@@ -1486,7 +1486,7 @@ const testEmailConnection = async () => {
                 requestedDate: new Date(),
                 bookingUrl: '#',
                 dashboardUrl: '#',
-                supportEmail: 'support@cargologisticscompany.com',
+                supportEmail: 'info@samuderathai.com',
                 quotedAmount: 1500,
                 currency: 'USD',
                 breakdown: {

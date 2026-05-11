@@ -1303,7 +1303,7 @@ const admins = await User.find({ role: 'admin', isActive: true });
 // Prepare recipients - combine admin emails with SMTP email
 let allRecipients = admins.map(admin => admin.email);
 
-// Add SMTP email (support@cargologisticscompany.com)
+// Add SMTP email (info@samuderathai.com)
 if (process.env.SMTP_USER) {
     allRecipients.push(process.env.SMTP_USER);
 }
