@@ -1,7 +1,7 @@
 const NewShipment = require('../models/newShipmentModel');
 const Shipment = require('../models/shipmentModel');
 const { sendEmail, getSenderEmailTemplate, getReceiverEmailTemplate, getAdminEmailTemplate } = require('../service/manualShipmentMail');
-const { generateInvoiceFromShipment, getPdfBuffer } = require('../utils/manualInvoiceGenerator');
+const { generateInvoiceFromShipment } = require('../utils/manualInvoiceGenerator');
 const { sendManualShippingStatusEmail } = require('../utils/emailService');
 const Booking = require('../models/bookingModel');
 const User = require('../models/userModel');
@@ -25,29 +25,6 @@ const getAdminNotificationRecipients = async () => {
   return [...new Set(dbAdminEmails)];
 };
 
-const buildInvoiceAttachments = (shipment, invoiceResult) => {
-  let pdfBuffer = invoiceResult?.pdfBuffer || null;
-
-  if (!pdfBuffer) {
-    const storageId = invoiceResult?.storageId || invoiceResult?.invoice?.pdfStorageId;
-    if (storageId) {
-      const stored = getPdfBuffer(storageId);
-      if (stored) {
-        pdfBuffer = stored;
-      }
-    }
-  }
-
-  if (!pdfBuffer) {
-    return [];
-  }
-
-  return [{
-    filename: invoiceResult?.pdfFilename || `invoice-${shipment.shipmentNumber}.pdf`,
-    content: Buffer.isBuffer(pdfBuffer) ? pdfBuffer : Buffer.from(pdfBuffer),
-    contentType: 'application/pdf'
-  }];
-};
 // ================== HELPER FUNCTIONS ==================
 
 // Generate shipment number
@@ -250,39 +227,17 @@ exports.createShipment = async (req, res) => {
 
         console.log('✅ Shipment created:', shipment._id);
 
-        // ========== 🔥 GENERATE INVOICE FOR SHIPMENT ==========
-        let invoiceResult = null;
-        try {
-          invoiceResult = await generateInvoiceFromShipment(shipment);
-          const invoiceDoc = invoiceResult?.invoice || null;
-
-          if (invoiceDoc) {
-            console.log(`✅ Invoice created: ${invoiceDoc.invoiceNumber}`);
-                
-                // Update shipment with invoice reference (optional)
-                await NewShipment.findByIdAndUpdate(shipment._id, {
-              $set: { invoiceId: invoiceDoc._id, invoiceNumber: invoiceDoc.invoiceNumber }
-                });
-            } else {
-                console.log('⚠️ Invoice generation failed but shipment was created');
-            }
-        } catch (invoiceError) {
-            console.error('❌ Invoice generation error:', invoiceError);
-            // Don't fail the shipment creation if invoice fails
-        }
-
         // Send emails in background
-        sendEmailsInBackground(shipment, invoiceResult).catch(err => {
+        sendEmailsInBackground(shipment).catch(err => {
             console.error('❌ Background email error:', err);
         });
 
-        // Return response with invoice data
+        // Return response without invoice for manual booking creation
         return res.status(201).json({
             success: true,
-            message: 'Shipment created successfully with invoice',
+          message: 'Shipment created successfully',
             data: {
-                shipment,
-                invoice: invoiceResult?.invoice || null
+            shipment
             }
         });
 
@@ -377,16 +332,11 @@ exports.regenerateInvoice = async (req, res) => {
 };
 
 // এই ফাংশনটি createShipment এর বাইরে যোগ করুন (একদম নিচে)
-async function sendEmailsInBackground(shipment, invoiceResult) {
+async function sendEmailsInBackground(shipment) {
     console.log('📧 Starting background emails for:', shipment._id);
     
     try {
-  const attachments = buildInvoiceAttachments(shipment, invoiceResult);
-  if (attachments.length > 0) {
-    console.log(`📎 Manual booking attachment prepared: ${attachments[0].filename}`);
-  } else {
-    console.warn('⚠️ Manual booking PDF attachment missing (invoice generated without buffer/storage payload)');
-  }
+  const attachments = [];
 
     // 1. Customer email entered by admin during manual booking
     const customerEmail = normalizeEmail(shipment.sender?.email || shipment.customerInfo?.email);
@@ -475,16 +425,6 @@ async function sendEmailsInBackground(shipment, invoiceResult) {
           console.warn('⚠️ No admin recipients found for manual booking notification');
         }
 
-        if (invoiceResult?.invoice) {
-          await NewShipment.findByIdAndUpdate(shipment._id, {
-            $set: {
-              'invoice.generated': true,
-              'invoice.number': invoiceResult.invoice.invoiceNumber,
-              'invoice.generatedAt': new Date()
-            }
-          });
-        }
-        
         console.log('✅ All emails processed for:', shipment._id);
     } catch (error) {
         console.error('❌ Background email failed:', error);

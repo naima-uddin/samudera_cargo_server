@@ -41,6 +41,24 @@ const getCustomerNotificationRecipients = (booking, reqUserEmail = null) => {
     ]);
 };
 
+const getBookingPartyRecipients = (booking, reqUserEmail = null) => {
+    const senderRecipients = uniqueEmails([
+        booking?.sender?.email,
+        booking?.customer?.email,
+        reqUserEmail
+    ]);
+
+    const receiverRecipients = uniqueEmails([
+        booking?.receiver?.email
+    ]);
+
+    return {
+        senderRecipients,
+        receiverRecipients,
+        allRecipients: uniqueEmails([...senderRecipients, ...receiverRecipients])
+    };
+};
+
 const sendTemplateEmailPerRecipient = async ({ recipients = [], subject, template, data, attachments = [] }) => {
     for (const email of uniqueEmails(recipients)) {
         const result = await sendEmail({ to: email, subject, template, data, attachments });
@@ -636,7 +654,7 @@ exports.updatePriceQuote = async (req, res) => {
 
         await booking.save();
 
-        const customerRecipients = getCustomerNotificationRecipients(booking, req.user?.email);
+        const { allRecipients: customerRecipients } = getBookingPartyRecipients(booking, req.user?.email);
         const customerName = booking.customer?.firstName || booking.customer?.lastName
             ? `${booking.customer?.firstName || ''} ${booking.customer?.lastName || ''}`.trim()
             : booking.sender?.name || 'Customer';
@@ -1142,7 +1160,7 @@ if (pdfBuffer && invoice) {
 }
 
 // Customer Email with PDF Attachment
-const customerRecipients = getCustomerNotificationRecipients(booking, req.user?.email);
+const { allRecipients: customerRecipients } = getBookingPartyRecipients(booking, req.user?.email);
 if (customerRecipients.length > 0) {
     const emailData = {
         subject: '🎉 Booking Confirmed! - Samudera Traffic Co., Ltd.s',
@@ -1375,11 +1393,7 @@ if (allRecipients.length > 0) {
     console.log('✅ Quote rejection email sent to:', allRecipients);
 }
 
-        const rejectRecipients = uniqueEmails([
-            booking.sender?.email,
-            booking.receiver?.email,
-            booking.customer?.email
-        ]);
+        const { allRecipients: rejectRecipients } = getBookingPartyRecipients(booking, req.user?.email);
         for (const recipientEmail of rejectRecipients) {
             await sendEmail({
                 to: recipientEmail,
@@ -1467,11 +1481,7 @@ exports.cancelBooking = async (req, res) => {
         }
 
         // Notify sender and receiver regardless of who cancels
-        const cancelCustomerRecipients = uniqueEmails([
-            booking.sender?.email,
-            booking.receiver?.email,
-            booking.customer?.email
-        ]);
+        const { allRecipients: cancelCustomerRecipients } = getBookingPartyRecipients(booking, req.user?.email);
         for (const recipientEmail of cancelCustomerRecipients) {
             await sendEmail({
                 to: recipientEmail,
@@ -2746,16 +2756,16 @@ exports.trackByNumber = async (req, res) => {
       console.log('🔍 Searching by booking number:', trackingNumber);
       const bkReg = new RegExp(`^${trackingNumber}$`, 'i');
 
-      // Check ManualShipment first
+      // Check ManualShipment by bookingNumber (separate queries to avoid sparse index $or issues)
       if (!shipmentData) {
-        console.log('  Checking ManualShipment...');
-        const bkMn = await ManualShipment.findOne({ 
-          $or: [
-            { bookingNumber: bkReg },
-            { shipmentNumber: bkReg }
-          ]
-        }).lean();
-        if (bkMn) { source = 'manual'; shipmentData = buildManualData(bkMn); console.log('✅ Found in ManualShipment by bookingNumber'); }
+        console.log('  Checking ManualShipment by bookingNumber...');
+        const bkMnByBk = await ManualShipment.findOne({ bookingNumber: bkReg }).lean();
+        if (bkMnByBk) { source = 'manual'; shipmentData = buildManualData(bkMnByBk); console.log('✅ Found in ManualShipment by bookingNumber'); }
+      }
+      if (!shipmentData) {
+        console.log('  Checking ManualShipment by shipmentNumber...');
+        const bkMnBySh = await ManualShipment.findOne({ shipmentNumber: bkReg }).lean();
+        if (bkMnBySh) { source = 'manual'; shipmentData = buildManualData(bkMnBySh); console.log('✅ Found in ManualShipment by shipmentNumber'); }
       }
 
       // Search Booking model and then follow link to NewShipment for full timeline
@@ -2805,6 +2815,15 @@ exports.trackByNumber = async (req, res) => {
           .populate('customerId', 'firstName lastName companyName email phone')
           .populate('createdBy', 'firstName lastName email').lean();
         if (bkF1) { source = 'new_shipment'; shipmentData = bkF1; console.log('✅ Found in NewShipment by shipmentNumber'); }
+      }
+
+      // Try searching NewShipment's bookingNumber field (admin-set or auto-generated)
+      if (!shipmentData) {
+        console.log('  Checking NewShipment by bookingNumber...');
+        const bkF2 = await NewShipment.findOne({ bookingNumber: bkReg })
+          .populate('customerId', 'firstName lastName companyName email phone')
+          .populate('createdBy', 'firstName lastName email').lean();
+        if (bkF2) { source = 'new_shipment'; shipmentData = bkF2; console.log('✅ Found in NewShipment by bookingNumber'); }
       }
 
       // Try old Shipment model
