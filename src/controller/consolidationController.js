@@ -887,7 +887,7 @@ exports.getConsolidationById = async (req, res) => {
         const consolidation = await Consolidation.findById(id)
             .populate({
                 path: 'shipments',
-                select: 'trackingNumber status customerId sender receiver currentLocation',
+            select: 'trackingNumber status customerId sender receiver currentLocation shipmentDetails transport transportEntries vesselName vesselNumber voyageNumber voyageNo vasselName vasselNumber voyagNumber voyagNo',
                 populate: {
                     path: 'customerId',
                     select: 'firstName lastName companyName email phone'
