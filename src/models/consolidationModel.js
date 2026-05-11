@@ -37,12 +37,16 @@ const consolidationSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    containerNumbers: [String],
     containerType: {
         type: String,
         enum: ['20ft', '40ft', '40ft HC', '45ft', 'LCL'],
         default: '20ft'
     },
     sealNumber: String,
+    sealNumbers: [String],
+    vesselName: String,
+    voyageNumber: String,
     blNumber: String,
     blNumbers: [String],
     

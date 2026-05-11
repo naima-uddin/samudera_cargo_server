@@ -1558,8 +1558,14 @@ exports.trackByNumber = async (req, res) => {
             consolidationInfo = {
                 number: cons.consolidationNumber,
                 containerNumber: resolvedContainerNumber || cons.containerNumber,
+                containerNumbers: cons.containerNumbers || cons.containerNumber?.split(',').map(n => n.trim()).filter(Boolean) || [],
                 containerType: cons.containerType,
                 sealNumber: resolvedSealNumber || cons.sealNumber,
+                sealNumbers: cons.sealNumbers || cons.sealNumber?.split(',').map(n => n.trim()).filter(Boolean) || [],
+                blNumber: cons.blNumber,
+                blNumbers: cons.blNumbers || (cons.blNumber ? cons.blNumber.split(',').map(n => n.trim()).filter(Boolean) : []),
+                vesselName: cons.vesselName || cons.carrier?.vesselNumber || null,
+                voyageNumber: cons.voyageNumber || null,
                 originWarehouse: cons.originWarehouse,
                 destinationPort: cons.destinationPort,
                 status: cons.status
