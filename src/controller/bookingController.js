@@ -1378,7 +1378,7 @@ if (allRecipients.length > 0) {
             await sendEmail({
                 to: booking.sender.email,
                 subject: 'Quote Rejection Confirmed',
-                template: 'booking-rejected-customer',
+                template: 'quote-rejected-customer',
                 data: {
                     bookingNumber: booking.bookingNumber,
                     customerName: booking.sender?.name,

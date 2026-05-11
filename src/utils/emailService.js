@@ -12,12 +12,8 @@ const transporter = nodemailer.createTransport({
         pass: process.env.SMTP_PASS
     },
     tls: {
-        rejectUnauthorized: false,
-        ciphers: 'SSLv3'
-    },
-    pool: true,
-    maxConnections: 5,
-    maxMessages: 100
+        rejectUnauthorized: false
+    }
 });
 
 // Verify connection configuration
@@ -1300,7 +1296,376 @@ const templates = {
             </body>
             </html>
         `
+    }),
+
+    // ========== BOOKING REJECTED CUSTOMER (alias) ==========
+    'booking-rejected-customer': (data) => ({
+        subject: `Quote Rejection Confirmed - ${data.bookingNumber}`,
+        html: `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <style>
+                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                    .header { background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0; }
+                    .content { background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header"><h1>Quote Rejection Confirmed</h1></div>
+                    <div class="content">
+                        <h2>Dear ${data.customerName},</h2>
+                        <p>You have successfully rejected the quote for booking <strong>${data.bookingNumber}</strong>.</p>
+                        <p><strong>Reason provided:</strong> ${data.reason}</p>
+                        <p>Need help? Contact us at <a href="mailto:${data.supportEmail || 'support@samuderathai.com'}">${data.supportEmail || 'support@samuderathai.com'}</a></p>
+                    </div>
+                </div>
+            </body>
+            </html>
+        `
+    }),
+
+    // ========== CONSOLIDATION CREATED ==========
+    'consolidation-created': (data) => ({
+        subject: `📦 Shipments Consolidated - ${data.consolidationNumber}`,
+        html: `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <style>
+                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px 20px; text-align: center; border-radius: 10px 10px 0 0; }
+                    .content { background: #f9f9f9; padding: 30px 20px; border-radius: 0 0 10px 10px; }
+                    .info-box { background: white; border-left: 4px solid #667eea; padding: 15px; margin: 20px 0; border-radius: 5px; }
+                    .footer { margin-top: 30px; text-align: center; color: #666; font-size: 12px; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header"><h1>📦 Shipments Consolidated</h1></div>
+                    <div class="content">
+                        <h2>Dear ${data.customerName},</h2>
+                        <p>Your shipments have been consolidated and are ready for dispatch.</p>
+                        <div class="info-box">
+                            <p><strong>Consolidation Number:</strong> ${data.consolidationNumber}</p>
+                            <p><strong>Shipments Included:</strong> ${data.shipmentCount}</p>
+                            <p><strong>Destination:</strong> ${data.destination}</p>
+                            ${data.sealNumber ? `<p><strong>Seal Number:</strong> ${data.sealNumber}</p>` : ''}
+                        </div>
+                        <p>You will receive further tracking updates as your shipment progresses. Thank you for choosing B2B Logistics.</p>
+                    </div>
+                    <div class="footer"><p>&copy; ${new Date().getFullYear()} B2B Logistics. All rights reserved.</p></div>
+                </div>
+            </body>
+            </html>
+        `
+    }),
+
+    // CamelCase alias for backward compatibility
+    'consolidationCreated': (data) => ({
+        subject: `📦 Shipments Consolidated - ${data.consolidationNumber}`,
+        html: `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <style>
+                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px 20px; text-align: center; border-radius: 10px 10px 0 0; }
+                    .content { background: #f9f9f9; padding: 30px 20px; border-radius: 0 0 10px 10px; }
+                    .info-box { background: white; border-left: 4px solid #667eea; padding: 15px; margin: 20px 0; border-radius: 5px; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header"><h1>📦 Shipments Consolidated</h1></div>
+                    <div class="content">
+                        <h2>Dear ${data.customerName},</h2>
+                        <p>Your shipments have been consolidated and are ready for dispatch.</p>
+                        <div class="info-box">
+                            <p><strong>Consolidation Number:</strong> ${data.consolidationNumber}</p>
+                            <p><strong>Shipments Included:</strong> ${data.shipmentCount}</p>
+                            <p><strong>Destination:</strong> ${data.destination}</p>
+                            ${data.sealNumber ? `<p><strong>Seal Number:</strong> ${data.sealNumber}</p>` : ''}
+                        </div>
+                    </div>
+                </div>
+            </body>
+            </html>
+        `
+    }),
+
+    // ========== SHIPMENT STATUS UPDATE ==========
+    'shipment-status-update': (data) => ({
+        subject: `🚚 Shipment Update: ${data.status} - ${data.trackingNumber}`,
+        html: `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <style>
+                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px 20px; text-align: center; border-radius: 10px 10px 0 0; }
+                    .content { background: #f9f9f9; padding: 30px 20px; border-radius: 0 0 10px 10px; }
+                    .info-box { background: white; border-left: 4px solid #667eea; padding: 15px; margin: 20px 0; border-radius: 5px; }
+                    .status-badge { display: inline-block; padding: 8px 16px; background: #667eea; color: white; border-radius: 20px; font-size: 14px; font-weight: bold; }
+                    .button { display: inline-block; padding: 12px 24px; background: #667eea; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header"><h1>🚚 Shipment Status Update</h1></div>
+                    <div class="content">
+                        <h2>Dear ${data.customerName},</h2>
+                        <p>Your shipment status has been updated.</p>
+                        <div class="info-box">
+                            <p><strong>Tracking Number:</strong> ${data.trackingNumber}</p>
+                            <div style="margin: 15px 0;"><span class="status-badge">${data.status}</span></div>
+                            <p><strong>Location:</strong> ${data.location || 'In Transit'}</p>
+                            ${data.description ? `<p><strong>Details:</strong> ${data.description}</p>` : ''}
+                        </div>
+                        ${data.trackingUrl ? `<div style="text-align: center; margin: 20px 0;"><a href="${data.trackingUrl}" class="button">Track Your Shipment</a></div>` : ''}
+                    </div>
+                </div>
+            </body>
+            </html>
+        `
+    }),
+
+    // ========== SHIPMENT ASSIGNED ==========
+    'shipment-assigned': (data) => ({
+        subject: `📋 New Shipment Assigned to You - ${data.trackingNumber}`,
+        html: `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <style>
+                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                    .header { background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%); color: white; padding: 30px 20px; text-align: center; border-radius: 10px 10px 0 0; }
+                    .content { background: #f9f9f9; padding: 30px 20px; border-radius: 0 0 10px 10px; }
+                    .info-box { background: white; border-left: 4px solid #2563eb; padding: 15px; margin: 20px 0; border-radius: 5px; }
+                    .button { display: inline-block; padding: 12px 24px; background: #2563eb; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header"><h1>📋 New Shipment Assigned</h1></div>
+                    <div class="content">
+                        <h2>Hello ${data.staffName},</h2>
+                        <p>A new shipment has been assigned to you. Please review and process it promptly.</p>
+                        <div class="info-box">
+                            <p><strong>Tracking Number:</strong> ${data.trackingNumber}</p>
+                            <p><strong>Customer:</strong> ${data.customerName}</p>
+                        </div>
+                        ${data.shipmentUrl ? `<div style="text-align: center; margin: 20px 0;"><a href="${data.shipmentUrl}" class="button">View Shipment</a></div>` : ''}
+                    </div>
+                </div>
+            </body>
+            </html>
+        `
+    }),
+
+    // ========== SHIPMENT CANCELLED ==========
+    'shipment-cancelled': (data) => ({
+        subject: `❌ Shipment Cancelled - ${data.trackingNumber}`,
+        html: `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <style>
+                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                    .header { background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); color: white; padding: 30px 20px; text-align: center; border-radius: 10px 10px 0 0; }
+                    .content { background: #f9f9f9; padding: 30px 20px; border-radius: 0 0 10px 10px; }
+                    .info-box { background: white; border-left: 4px solid #dc3545; padding: 15px; margin: 20px 0; border-radius: 5px; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header"><h1>❌ Shipment Cancelled</h1></div>
+                    <div class="content">
+                        <h2>Dear ${data.customerName},</h2>
+                        <p>Your shipment has been cancelled.</p>
+                        <div class="info-box">
+                            <p><strong>Tracking Number:</strong> ${data.trackingNumber}</p>
+                            <p><strong>Reason:</strong> ${data.reason}</p>
+                        </div>
+                        <p>If you have questions or need to create a new shipment, please contact our support team.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+        `
+    }),
+
+    // ========== RETURN REQUEST TEMPLATES ==========
+    'return-request-admin': (data) => ({
+        subject: `🔄 Return Request - ${data.trackingNumber}`,
+        html: `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <style>
+                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                    .header { background: linear-gradient(135deg, #fd7e14 0%, #e67e22 100%); color: white; padding: 30px 20px; text-align: center; border-radius: 10px 10px 0 0; }
+                    .content { background: #f9f9f9; padding: 30px 20px; border-radius: 0 0 10px 10px; }
+                    .info-box { background: white; border-left: 4px solid #fd7e14; padding: 15px; margin: 20px 0; border-radius: 5px; }
+                    .button { display: inline-block; padding: 12px 24px; background: #fd7e14; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header"><h1>🔄 Return Request Received</h1></div>
+                    <div class="content">
+                        <h2>Hello Admin Team,</h2>
+                        <p>A customer has submitted a return request that requires your review.</p>
+                        <div class="info-box">
+                            <p><strong>Tracking Number:</strong> ${data.trackingNumber}</p>
+                            <p><strong>Customer:</strong> ${data.customerName}</p>
+                            <p><strong>Reason:</strong> ${data.reason}</p>
+                            ${data.description ? `<p><strong>Description:</strong> ${data.description}</p>` : ''}
+                            <p><strong>Request Date:</strong> ${data.requestDate}</p>
+                            ${data.daysSinceDelivery !== undefined ? `<p><strong>Days Since Delivery:</strong> ${data.daysSinceDelivery}</p>` : ''}
+                        </div>
+                        ${data.shipmentUrl ? `<div style="text-align: center; margin: 20px 0;"><a href="${data.shipmentUrl}" class="button">Review Return Request</a></div>` : ''}
+                    </div>
+                </div>
+            </body>
+            </html>
+        `
+    }),
+
+    'return-approved-customer': (data) => ({
+        subject: `✅ Return Request Approved - ${data.trackingNumber}`,
+        html: `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <style>
+                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                    .header { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 30px 20px; text-align: center; border-radius: 10px 10px 0 0; }
+                    .content { background: #f9f9f9; padding: 30px 20px; border-radius: 0 0 10px 10px; }
+                    .info-box { background: white; border-left: 4px solid #28a745; padding: 15px; margin: 20px 0; border-radius: 5px; }
+                    .button { display: inline-block; padding: 12px 24px; background: #28a745; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header"><h1>✅ Return Request Approved</h1></div>
+                    <div class="content">
+                        <h2>Dear ${data.customerName},</h2>
+                        <p>Your return request has been approved.</p>
+                        <div class="info-box">
+                            <p><strong>Original Tracking Number:</strong> ${data.trackingNumber}</p>
+                            <p><strong>Return Tracking Number:</strong> ${data.returnTrackingNumber}</p>
+                            ${data.notes ? `<p><strong>Notes:</strong> ${data.notes}</p>` : ''}
+                        </div>
+                        <p><strong>Next Steps:</strong> ${data.returnInstructions || 'Our team will contact you with pickup details.'}</p>
+                        ${data.dashboardUrl ? `<div style="text-align: center; margin: 20px 0;"><a href="${data.dashboardUrl}" class="button">View Details</a></div>` : ''}
+                    </div>
+                </div>
+            </body>
+            </html>
+        `
+    }),
+
+    'return-rejected-customer': (data) => ({
+        subject: `❌ Return Request Rejected - ${data.trackingNumber}`,
+        html: `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <style>
+                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                    .header { background: linear-gradient(135deg, #dc3545 0%, #c82333 100%); color: white; padding: 30px 20px; text-align: center; border-radius: 10px 10px 0 0; }
+                    .content { background: #f9f9f9; padding: 30px 20px; border-radius: 0 0 10px 10px; }
+                    .info-box { background: white; border-left: 4px solid #dc3545; padding: 15px; margin: 20px 0; border-radius: 5px; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header"><h1>❌ Return Request Rejected</h1></div>
+                    <div class="content">
+                        <h2>Dear ${data.customerName},</h2>
+                        <p>Unfortunately, your return request has been rejected.</p>
+                        <div class="info-box">
+                            <p><strong>Tracking Number:</strong> ${data.trackingNumber}</p>
+                            <p><strong>Reason:</strong> ${data.rejectionReason}</p>
+                        </div>
+                        <p>If you have questions, please contact us at <a href="mailto:${data.supportEmail || 'support@samuderathai.com'}">${data.supportEmail || 'support@samuderathai.com'}</a>.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+        `
+    }),
+
+    'return-completed-customer': (data) => ({
+        subject: `✅ Return Completed - ${data.trackingNumber}`,
+        html: `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <style>
+                    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; margin: 0; padding: 0; }
+                    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+                    .header { background: linear-gradient(135deg, #28a745 0%, #20c997 100%); color: white; padding: 30px 20px; text-align: center; border-radius: 10px 10px 0 0; }
+                    .content { background: #f9f9f9; padding: 30px 20px; border-radius: 0 0 10px 10px; }
+                    .info-box { background: white; border-left: 4px solid #28a745; padding: 15px; margin: 20px 0; border-radius: 5px; }
+                    .button { display: inline-block; padding: 12px 24px; background: #28a745; color: white; text-decoration: none; border-radius: 5px; font-weight: bold; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header"><h1>✅ Return Completed</h1></div>
+                    <div class="content">
+                        <h2>Dear ${data.customerName},</h2>
+                        <p>Your return has been completed successfully.</p>
+                        <div class="info-box">
+                            <p><strong>Tracking Number:</strong> ${data.trackingNumber}</p>
+                            ${data.notes ? `<p><strong>Notes:</strong> ${data.notes}</p>` : ''}
+                        </div>
+                        <p>Thank you for choosing B2B Logistics. We hope to serve you again.</p>
+                        ${data.dashboardUrl ? `<div style="text-align: center; margin: 20px 0;"><a href="${data.dashboardUrl}" class="button">View Details</a></div>` : ''}
+                    </div>
+                </div>
+            </body>
+            </html>
+        `
     })
+};
+
+// Helper: get all admin emails from DB (lazy-loaded to avoid circular deps)
+const getAdminEmails = async () => {
+    try {
+        const User = require('../models/userModel');
+        const admins = await User.find({ role: 'admin', isActive: true }).select('email');
+        return [...new Set([
+            ...admins.map(a => a.email).filter(Boolean),
+            process.env.SMTP_USER,
+            'tracking@samuderathai.com'
+        ])].filter(Boolean);
+    } catch (err) {
+        console.error('⚠️ Failed to fetch admin emails:', err.message);
+        return [process.env.SMTP_USER, 'tracking@samuderathai.com'].filter(Boolean);
+    }
 };
 
 // Send email function with retry logic
@@ -1669,6 +2034,30 @@ const sendConsolidationStatusEmail = async (consolidationData) => {
             results.errors.push(errorMsg);
         }
 
+        // Send to all admin users in DB
+        try {
+            const adminEmails = await getAdminEmails();
+            // trackingEmail was already sent above — skip duplicates
+            const trackingEmailSent = process.env.SMTP_USER || 'tracking@samuderathai.com';
+            const remainingAdmins = adminEmails.filter(e => e !== trackingEmailSent);
+            results.admins = [];
+            for (const adminEmail of remainingAdmins) {
+                const adminResult = await sendEmail({
+                    to: adminEmail,
+                    template: 'consolidation-status-update',
+                    data: {
+                        ...emailData,
+                        recipientName: 'Admin Team',
+                        status: `[ADMIN] ${statusMessage}`
+                    }
+                });
+                results.admins.push({ email: adminEmail, success: adminResult?.success });
+                console.log(`✅ Admin consolidation email sent to ${adminEmail}`);
+            }
+        } catch (adminErr) {
+            console.error('⚠️ Failed to send admin consolidation emails:', adminErr.message);
+        }
+
         // Log summary
         console.log('📧 Consolidation Status Email Summary:', {
             consolidationNumber,
@@ -1676,6 +2065,7 @@ const sendConsolidationStatusEmail = async (consolidationData) => {
             sender: results.sender?.success ? '✅ Sent' : '❌ Failed',
             receiver: results.receiver?.success ? '✅ Sent' : '❌ Failed',
             tracking: results.tracking?.success ? '✅ Sent' : '❌ Failed',
+            admins: results.admins?.length || 0,
             errors: results.errors.length > 0 ? results.errors : 'None'
         });
 
@@ -1767,6 +2157,26 @@ const sendManualShippingStatusEmail = async (shipmentData) => {
                 console.error(`❌ ${errorMsg}`);
                 results.errors.push(errorMsg);
             }
+        }
+
+        // Send to SMTP host + all admin users in DB
+        try {
+            const adminEmails = await getAdminEmails();
+            results.admins = [];
+            for (const adminEmail of adminEmails) {
+                const adminResult = await sendEmail({
+                    to: adminEmail,
+                    template: 'manual-shipment-status-update',
+                    data: {
+                        ...emailData,
+                        recipientName: 'Admin Team'
+                    }
+                });
+                results.admins.push({ email: adminEmail, success: adminResult?.success });
+                console.log(`✅ Admin manual shipment email sent to ${adminEmail}`);
+            }
+        } catch (adminErr) {
+            console.error('⚠️ Failed to send admin manual shipment emails:', adminErr.message);
         }
 
         // Log results

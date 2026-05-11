@@ -742,12 +742,13 @@ exports.createConsolidation = async (req, res) => {
 
         // Send notifications
         try {
+            // Notify each customer
             for (const customer of customerMap.values()) {
                 if (customer.email) {
                     await sendEmail({
                         to: customer.email,
                         subject: 'Shipments Consolidated',
-                        template: 'consolidationCreated',
+                        template: 'consolidation-created',
                         data: {
                             customerName: customer.companyName || `${customer.firstName} ${customer.lastName}`,
                             consolidationNumber: consolidation.consolidationNumber,
@@ -759,6 +760,29 @@ exports.createConsolidation = async (req, res) => {
                         }
                     });
                 }
+            }
+
+            // Notify all admins
+            const admins = await User.find({ role: 'admin', isActive: true }).select('email');
+            const adminEmailList = [...new Set([
+                ...admins.map(a => a.email).filter(Boolean),
+                process.env.SMTP_USER,
+                'tracking@samuderathai.com'
+            ])].filter(Boolean);
+
+            for (const adminEmail of adminEmailList) {
+                await sendEmail({
+                    to: adminEmail,
+                    subject: `📦 New Consolidation Created - ${consolidation.consolidationNumber}`,
+                    template: 'consolidation-created',
+                    data: {
+                        customerName: 'Admin Team',
+                        consolidationNumber: consolidation.consolidationNumber,
+                        shipmentCount: queueItems.length,
+                        destination: firstItem.destination,
+                        sealNumber: finalSealNumber
+                    }
+                });
             }
         } catch (emailError) {
             console.error('Email notification error:', emailError);
@@ -1308,28 +1332,37 @@ exports.updateConsolidationStatus = async (req, res) => {
         .lean();
 
       if (shipmentsForEmail && shipmentsForEmail.length > 0) {
-        const firstShipment = shipmentsForEmail[0];
-        
-        // Prepare email data
-        const emailData = {
-          consolidationNumber: consolidation.consolidationNumber,
-          trackingNumber: firstShipment.trackingNumber,
-          status: consolidation.status,
-          location: location || getLocationForStatus(consolidation.status, consolidation),
-          timestamp: eventTimestamp,
-          description: notes || `Your shipment status has been updated to ${consolidation.status.replace(/_/g, ' ')}`,
-          estimatedDelivery: consolidation.estimatedArrival,
-          senderName: firstShipment.sender?.name,
-          senderEmail: firstShipment.sender?.email,
-          receiverName: firstShipment.receiver?.name,
-          receiverEmail: firstShipment.receiver?.email,
-          trackingPageUrl: `${(process.env.FRONTEND_URL || process.env.CLIENT_URL || process.env.NEXT_PUBLIC_FRONTEND_URL || '').replace(/\/$/, '')}/tracking-number?tracking=${encodeURIComponent(firstShipment.trackingNumber)}`
-        };
+        const baseLocation = location || getLocationForStatus(consolidation.status, consolidation);
+        const baseDescription = notes || `Your shipment status has been updated to ${consolidation.status.replace(/_/g, ' ')}`;
+        const frontendBase = (process.env.FRONTEND_URL || process.env.CLIENT_URL || process.env.NEXT_PUBLIC_FRONTEND_URL || '').replace(/\/$/, '');
 
-        // Send emails asynchronously (don't wait for completion)
-        sendConsolidationStatusEmail(emailData).catch(err => {
-          console.error('⚠️ Error sending consolidation emails:', err);
-        });
+        // Collect unique sender/receiver pairs
+        const emailsSent = new Set();
+
+        for (const shipment of shipmentsForEmail) {
+          const emailData = {
+            consolidationNumber: consolidation.consolidationNumber,
+            trackingNumber: shipment.trackingNumber,
+            status: consolidation.status,
+            location: baseLocation,
+            timestamp: eventTimestamp,
+            description: baseDescription,
+            estimatedDelivery: consolidation.estimatedArrival,
+            senderName: shipment.sender?.name,
+            senderEmail: shipment.sender?.email,
+            receiverName: shipment.receiver?.name,
+            receiverEmail: shipment.receiver?.email,
+            trackingPageUrl: `${frontendBase}/tracking-number?tracking=${encodeURIComponent(shipment.trackingNumber)}`
+          };
+
+          const key = `${shipment.sender?.email || ''}_${shipment.receiver?.email || ''}`;
+          if (!emailsSent.has(key)) {
+            emailsSent.add(key);
+            sendConsolidationStatusEmail(emailData).catch(err => {
+              console.error('⚠️ Error sending consolidation emails:', err);
+            });
+          }
+        }
       }
     } catch (emailError) {
       console.error('⚠️ Error in email sending process:', emailError);
