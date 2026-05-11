@@ -3012,6 +3012,18 @@ exports.trackByNumber = async (req, res) => {
     if (shipmentData?.consolidationId) {
       shipmentData.consolidation = shipmentData.consolidationId;
     }
+
+    // Resolve bookingNumber: NewShipment doesn't have a bookingNumber field — look it up from the Booking model
+    let resolvedBookingNumber = shipmentData.bookingNumber;
+    if (!resolvedBookingNumber && shipmentData.trackingNumber) {
+      const bkLookup = await Booking.findOne(
+        { trackingNumber: { $regex: new RegExp(`^${shipmentData.trackingNumber}$`, 'i') } },
+        'bookingNumber'
+      ).lean();
+      if (bkLookup?.bookingNumber) {
+        resolvedBookingNumber = bkLookup.bookingNumber;
+      }
+    }
     
     const shipmentContainers = normalizeContainerEntries(
         shipmentData.containers,
@@ -3189,13 +3201,13 @@ exports.trackByNumber = async (req, res) => {
         let consolidationData = null;
         if (shipmentData.consolidationId) {
             consolidationData = await Consolidation.findById(shipmentData.consolidationId)
-                .select('consolidationNumber containerNumber containerType sealNumber status originWarehouse destinationPort shipments')
+                .select('consolidationNumber containerNumber containerType sealNumber sealNumbers vesselName voyageNumber blNumber blNumbers status originWarehouse destinationPort shipments')
                 .lean();
         }
 
         if (!consolidationData && shipmentData._id) {
             consolidationData = await Consolidation.findOne({ shipments: shipmentData._id })
-                .select('consolidationNumber containerNumber containerType sealNumber status originWarehouse destinationPort shipments')
+                .select('consolidationNumber containerNumber containerType sealNumber sealNumbers vesselName voyageNumber blNumber blNumbers status originWarehouse destinationPort shipments')
                 .lean();
         }
 
@@ -3212,7 +3224,7 @@ exports.trackByNumber = async (req, res) => {
 
             if (legacyShipmentQueries.length > 0) {
                 consolidationData = await Consolidation.findOne({ $or: legacyShipmentQueries })
-                    .select('consolidationNumber containerNumber containerType sealNumber status originWarehouse destinationPort shipments')
+                    .select('consolidationNumber containerNumber containerType sealNumber sealNumbers vesselName voyageNumber blNumber blNumbers status originWarehouse destinationPort shipments')
                     .lean();
             }
         }
@@ -3316,7 +3328,7 @@ exports.trackByNumber = async (req, res) => {
         // Prepare response
     const trackingInfo = {
       trackingNumber: shipmentData.trackingNumber,
-      bookingNumber: shipmentData.bookingNumber || shipmentData._id,
+      bookingNumber: resolvedBookingNumber || 'N/A',
       shipmentNumber: shipmentData.shipmentNumber,
       
             status: effectiveStatus,
@@ -3374,6 +3386,12 @@ exports.trackByNumber = async (req, res) => {
                         containerNumber: resolvedContainerNumber || consolidationData.containerNumber,
                         containerType: consolidationData.containerType,
                         sealNumber: resolvedSealNumber || consolidationData.sealNumber,
+                        vesselName: consolidationData.vesselName || null,
+                        voyageNumber: consolidationData.voyageNumber || null,
+                        blNumber: consolidationData.blNumber || shipmentContainers[0]?.blNumber || null,
+                        blNumbers: Array.isArray(consolidationData.blNumbers) && consolidationData.blNumbers.length > 0
+                            ? consolidationData.blNumbers
+                            : shipmentContainers.map(c => c.blNumber).filter(Boolean),
                         originWarehouse: consolidationData.originWarehouse,
                         destinationPort: consolidationData.destinationPort,
                         status: consolidationData.status
