@@ -1,13 +1,9 @@
 let cachedApp = null;
 
 const allowedOrigins = [
-	'https://b2b-cargo-client.vercel.app',
-	'https://b2b-cargo-dashboard.vercel.app',
+	'https://samuderathai.com',
+	'https://api.samuderathai.com',
 	'https://remarkable-flan-2a9036.netlify.app',
-	'https://admin.cargologisticscompany.com',
-	'https://client.cargologisticscompany.com',
-	'https://test.cargologisticscompany.com',
-	'https://adminlog.cargologisticscompany.com',
 	'http://localhost:3000',
 	'http://localhost:3001'
 ];
@@ -29,7 +25,7 @@ const isAllowedOrigin = (origin) => {
 		return true;
 	}
 
-	if (/^https:\/\/[a-z0-9.-]*cargologisticscompany\.com$/i.test(origin)) {
+	if (/^https:\/\/(?:[a-z0-9-]+\.)?samuderathai\.com$/i.test(origin)) {
 		return true;
 	}
 

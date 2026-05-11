@@ -10,16 +10,12 @@ const authRoutes = require('./src/routes/AuthRoutes'); // NEW: Google auth route
 const app = express();
 
 const allowedOrigins = [
-  'https://Samudera Cargo-cargo-client.vercel.app',
-  'https://Samudera Cargo-cargo-dashboard.vercel.app',
+  'https://samuderathai.com',
+  'https://api.samuderathai.com',
   'http://localhost:3000',
   'http://localhost:3001',
   'http://localhost:8000',
-  'https://frabjous-tiramisu-93e5f9.netlify.app',
-  'https://admin.cargologisticscompany.com',
-  'https://client.cargologisticscompany.com',
-  'https://test.cargologisticscompany.com',
-  'https://adminlog.cargologisticscompany.com'
+  'https://frabjous-tiramisu-93e5f9.netlify.app'
 ];
 
 const isAllowedOrigin = (origin) => {
@@ -31,12 +27,12 @@ const isAllowedOrigin = (origin) => {
     return true;
   }
 
-  // Allow Vercel preview/prod domains and the known custom production domain.
+  // Allow Vercel preview/prod domains and the production custom domains.
   if (/^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin)) {
     return true;
   }
 
-  if (/^https:\/\/[a-z0-9.-]*cargologisticscompany\.com$/i.test(origin)) {
+  if (/^https:\/\/(?:[a-z0-9-]+\.)?samuderathai\.com$/i.test(origin)) {
     return true;
   }
 
