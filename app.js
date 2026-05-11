@@ -10,8 +10,8 @@ const authRoutes = require('./src/routes/AuthRoutes'); // NEW: Google auth route
 const app = express();
 
 const allowedOrigins = [
-  'https://b2b-cargo-client.vercel.app',
-  'https://b2b-cargo-dashboard.vercel.app',
+  'https://Samudera Cargo-cargo-client.vercel.app',
+  'https://Samudera Cargo-cargo-dashboard.vercel.app',
   'http://localhost:3000',
   'http://localhost:3001',
   'http://localhost:8000',
@@ -88,7 +88,7 @@ try {
   mongoose = require('mongoose');
   console.log('Mongoose version:', mongoose.version);
 
-  const url = process.env.DATABASE_URL || process.env.MONGODB_URI || `mongodb+srv://a2itsohada_db_user:a2it-hrm@cluster0.18g6dhm.mongodb.net/B2B_Logistic?retryWrites=true&w=majority`;
+  const url = process.env.DATABASE_URL || process.env.MONGODB_URI || `mongodb+srv://naimauddinnitu_db_user:naimauddinnitu_db_password@cluster0.8abx6t9.mongodb.net/samudera_cargo?retryWrites=true&w=majority`;
 
   mongoose.set('strictQuery', false);
   mongoose.set('bufferCommands', false);
@@ -124,7 +124,7 @@ try {
       socketTimeoutMS: 45000
     })
       .then(async () => {
-        console.log("✅ B2B_Logistic DB Connected");
+        console.log("✅ Samudera Cargo DB Connected");
         console.log(`📊 Database: ${mongoose.connection.name}`);
         console.log(`🌍 Host: ${mongoose.connection.host}`);
 
@@ -175,7 +175,7 @@ app.get('/', (req, res) => {
     timestamp: new Date().toISOString(),
     server: 'running',
     database: mongoose && mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
-    message: 'Welcome to the B2B Samudera Traffic Co., Ltd.s API. Please refer to /api/v1 for available endpoints. Server running on the port {Process.env.PORT || 8000}'
+    message: 'Welcome to the Samudera Cargo Samudera Traffic Co., Ltd.s API. Please refer to /api/v1 for available endpoints. Server running on the port {Process.env.PORT || 8000}'
   });
 });
 
