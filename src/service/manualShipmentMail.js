@@ -57,7 +57,7 @@ const getSenderEmailTemplate = (shipment) => {
                 .details { background: white; padding: 15px; margin: 15px 0; border-radius: 5px; }
                 .tracking-btn {
   display: inline-block;
-  background: #F56602; /* orange */
+  background: #F56602; /* red */
   color: white;
   padding: 12px 24px;
   text-decoration: none;
