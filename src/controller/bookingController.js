@@ -2745,19 +2745,27 @@ exports.trackByNumber = async (req, res) => {
       console.log('🔍 Searching by booking number:', trackingNumber);
       const bkReg = new RegExp(`^${trackingNumber}$`, 'i');
 
-      // NewShipment doesn't have bookingNumber directly, but check ManualShipment first
+      // Check ManualShipment first
       if (!shipmentData) {
-        const bkMn = await ManualShipment.findOne({ bookingNumber: bkReg }).lean();
+        console.log('  Checking ManualShipment...');
+        const bkMn = await ManualShipment.findOne({ 
+          $or: [
+            { bookingNumber: bkReg },
+            { shipmentNumber: bkReg }
+          ]
+        }).lean();
         if (bkMn) { source = 'manual'; shipmentData = buildManualData(bkMn); console.log('✅ Found in ManualShipment by bookingNumber'); }
       }
 
       // Search Booking model and then follow link to NewShipment for full timeline
       if (!shipmentData) {
+        console.log('  Checking Booking...');
         const bk = await Booking.findOne({ bookingNumber: bkReg }).lean();
         if (bk) {
-          console.log('✅ Found in Booking by bookingNumber, trying to follow link to NewShipment...');
+          console.log('✅ Found in Booking by bookingNumber');
           // Follow the link: Booking.trackingNumber → NewShipment.trackingNumber
           if (bk.trackingNumber) {
+            console.log('  Following link to NewShipment via trackingNumber:', bk.trackingNumber);
             const linked = await NewShipment.findOne({
               trackingNumber: { $regex: new RegExp(`^${bk.trackingNumber}$`, 'i') }
             })
@@ -2771,6 +2779,7 @@ exports.trackByNumber = async (req, res) => {
           }
           // Also try Shipment model
           if (!shipmentData && bk.trackingNumber) {
+            console.log('  Following link to old Shipment via trackingNumber:', bk.trackingNumber);
             const linkedOld = await Shipment.findOne({
               trackingNumber: { $regex: new RegExp(`^${bk.trackingNumber}$`, 'i') }
             })
@@ -2788,14 +2797,18 @@ exports.trackByNumber = async (req, res) => {
         }
       }
 
-      // Also try searching NewShipment's shipmentNumber field (SHP-YYMM-NNNNN)
+      // Try searching NewShipment's shipmentNumber field (SHP-YYMM-NNNNN)
       if (!shipmentData) {
+        console.log('  Checking NewShipment by shipmentNumber...');
         const bkF1 = await NewShipment.findOne({ shipmentNumber: bkReg })
           .populate('customerId', 'firstName lastName companyName email phone')
           .populate('createdBy', 'firstName lastName email').lean();
         if (bkF1) { source = 'new_shipment'; shipmentData = bkF1; console.log('✅ Found in NewShipment by shipmentNumber'); }
       }
+
+      // Try old Shipment model
       if (!shipmentData) {
+        console.log('  Checking old Shipment...');
         const bkOs = await Shipment.findOne({ bookingNumber: bkReg })
           .populate('customerId', 'firstName lastName companyName email')
           .populate('bookingId', 'bookingNumber sender receiver dates')
@@ -2809,12 +2822,14 @@ exports.trackByNumber = async (req, res) => {
       const cnReg = new RegExp(`^${trackingNumber}$`, 'i');
       const cnQ = { $or: [{ 'containers.containerNumber': cnReg }, { containerNumber: cnReg }] };
 
+      console.log('  Checking NewShipment...');
       const cnF1 = await NewShipment.findOne(cnQ)
         .populate('customerId', 'firstName lastName companyName email phone')
         .populate('createdBy', 'firstName lastName email').lean();
       if (cnF1) { source = 'new_shipment'; shipmentData = cnF1; console.log('✅ Found in NewShipment by containerNumber'); }
 
       if (!shipmentData) {
+        console.log('  Checking old Shipment...');
         const cnF2 = await Shipment.findOne(cnQ)
           .populate('customerId', 'firstName lastName companyName email')
           .populate('bookingId', 'bookingNumber sender receiver dates')
@@ -2822,18 +2837,19 @@ exports.trackByNumber = async (req, res) => {
         if (cnF2) { source = 'shipment'; shipmentData = cnF2; console.log('✅ Found in Shipment by containerNumber'); }
       }
       if (!shipmentData) {
+        console.log('  Checking ManualShipment...');
         const cnMn = await ManualShipment.findOne(cnQ).lean();
         if (cnMn) { source = 'manual'; shipmentData = buildManualData(cnMn); console.log('✅ Found in ManualShipment by containerNumber'); }
       }
       // Fallback: search Consolidation (container numbers are stored there)
       if (!shipmentData) {
+        console.log('  Checking Consolidation...');
         const cnCons = await Consolidation.findOne({ $or: [
           { containerNumber: cnReg },
           { containerNumbers: cnReg }
         ]}).lean();
         if (cnCons) {
           console.log('✅ Found Consolidation by containerNumber, finding associated Shipment...');
-          // consolidation.shipments is an array of Shipment (old model) ObjectIds
           const shipmentIds = (cnCons.shipments || []).filter(Boolean);
           if (shipmentIds.length > 0) {
             const cnLinked = await Shipment.findOne({ _id: { $in: shipmentIds } })
@@ -2842,7 +2858,6 @@ exports.trackByNumber = async (req, res) => {
               .populate('consolidationId', 'timeline consolidationNumber originWarehouse destinationPort').lean();
             if (cnLinked) { source = 'shipment'; shipmentData = cnLinked; console.log('✅ Found Shipment via Consolidation.shipments containerNumber'); }
           }
-          // Also try: any Shipment whose consolidationId points to this consolidation
           if (!shipmentData) {
             const cnByRef = await Shipment.findOne({ consolidationId: cnCons._id })
               .populate('customerId', 'firstName lastName companyName email')
@@ -2857,14 +2872,24 @@ exports.trackByNumber = async (req, res) => {
       // ---- Search by BL number ----
       console.log('🔍 Searching by BL number:', trackingNumber);
       const blReg = new RegExp(`^${trackingNumber}$`, 'i');
-      const blQ = { $or: [{ 'containers.blNumber': blReg }, { blNumber: blReg }] };
+      const blQ = { 
+        $or: [
+          { 'containers.blNumber': blReg }, 
+          { blNumber: blReg },
+          { 'shipmentDetails.blNumber': blReg },
+          { 'shipmentDetails.containers.blNumber': blReg },
+          { 'shipmentDetails.blNumbers': blReg }
+        ]
+      };
 
+      console.log('  Checking NewShipment...');
       const blF1 = await NewShipment.findOne(blQ)
         .populate('customerId', 'firstName lastName companyName email phone')
         .populate('createdBy', 'firstName lastName email').lean();
       if (blF1) { source = 'new_shipment'; shipmentData = blF1; console.log('✅ Found in NewShipment by blNumber'); }
 
       if (!shipmentData) {
+        console.log('  Checking old Shipment...');
         const blF2 = await Shipment.findOne(blQ)
           .populate('customerId', 'firstName lastName companyName email')
           .populate('bookingId', 'bookingNumber sender receiver dates')
@@ -2872,11 +2897,13 @@ exports.trackByNumber = async (req, res) => {
         if (blF2) { source = 'shipment'; shipmentData = blF2; console.log('✅ Found in Shipment by blNumber'); }
       }
       if (!shipmentData) {
+        console.log('  Checking ManualShipment...');
         const blMn = await ManualShipment.findOne(blQ).lean();
         if (blMn) { source = 'manual'; shipmentData = buildManualData(blMn); console.log('✅ Found in ManualShipment by blNumber'); }
       }
       // Fallback: search Consolidation (BL numbers are stored there)
       if (!shipmentData) {
+        console.log('  Checking Consolidation...');
         const blCons = await Consolidation.findOne({ $or: [
           { blNumber: blReg },
           { blNumbers: blReg }
