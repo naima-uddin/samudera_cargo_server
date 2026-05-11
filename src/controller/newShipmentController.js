@@ -977,7 +977,7 @@ const isValidStatusTransition = (currentStatus, newStatus) => {
 exports.updateShipmentStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status, notes, resumeTo, updateDateTime, containers, transport, vesselName, voyageNumber } = req.body;
+    const { status, notes, resumeTo, updateDateTime, containers, transport, transports, vesselName, voyageNumber } = req.body;
     const userId = req.user?._id || req.user?.id || 'system';
 
     const STATUS_ALIASES = {
@@ -1179,12 +1179,31 @@ exports.updateShipmentStatus = async (req, res) => {
     }
 
     if (hasTransportUpdate) {
-      updateData.transport = {
-        ...existingShipment.transport?.toObject?.(),
-        ...(transport || {}),
-        ...(vesselName ? { vesselName } : {}),
-        ...(voyageNumber ? { voyageNumber } : {})
-      };
+      // Support both single transport object and array of transports (transportLegs)
+      if (Array.isArray(transports) && transports.length > 0) {
+        const normalizedLegs = transports
+          .map((leg) => ({
+            vesselName: leg?.vesselName || '',
+            voyageNumber: leg?.voyageNumber || ''
+          }))
+          .filter((leg) => leg.vesselName || leg.voyageNumber);
+        
+        if (normalizedLegs.length > 0) {
+          updateData.transportLegs = normalizedLegs;
+          // Also set the last leg as primary transport
+          updateData.transport = {
+            ...existingShipment.transport?.toObject?.(),
+            ...normalizedLegs[normalizedLegs.length - 1]
+          };
+        }
+      } else if (transport || vesselName || voyageNumber) {
+        updateData.transport = {
+          ...existingShipment.transport?.toObject?.(),
+          ...(transport || {}),
+          ...(vesselName ? { vesselName } : {}),
+          ...(voyageNumber ? { voyageNumber } : {})
+        };
+      }
     }
 
     // Handle lastActiveStatus for on_hold

@@ -3068,6 +3068,7 @@ exports.trackByNumber = async (req, res) => {
             sealNumber: resolvedSealNumber,
             blNumber: shipmentContainers[0]?.blNumber || null,
             transport: shipmentData.transport || {},
+            transportLegs: Array.isArray(shipmentData.transportLegs) ? shipmentData.transportLegs : [],
       
       // Sender & Receiver
       sender: shipmentData.sender || {},

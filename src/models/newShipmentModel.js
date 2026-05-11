@@ -159,6 +159,11 @@ const newShipmentSchema = new mongoose.Schema({
         flightNumber: { type: String, default: '' },
         carrierName: { type: String, default: '' }
     },
+
+    transportLegs: [{
+        vesselName: { type: String, default: '' },
+        voyageNumber: { type: String, default: '' }
+    }],
     
     // ========== DATES ==========
     dates: {
