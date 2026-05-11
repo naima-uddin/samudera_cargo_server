@@ -2700,8 +2700,9 @@ exports.trackByNumber = async (req, res) => {
     
     // Helper: build normalized ManualShipment data shape
     const buildManualData = (m) => ({
+      _id: m._id,
       trackingNumber: m.trackingNumber,
-      bookingNumber: m.bookingNumber || m._id.toString(),
+      bookingNumber: m.bookingNumber || null,
       status: m.status || 'pending',
       shipmentDetails: {
         origin: m.origin || 'China',
@@ -3015,6 +3016,20 @@ exports.trackByNumber = async (req, res) => {
 
     // Resolve bookingNumber: NewShipment doesn't have a bookingNumber field — look it up from the Booking model
     let resolvedBookingNumber = shipmentData.bookingNumber;
+
+    // For ManualShipments without a bookingNumber, trigger pre-save hook to generate one
+    if (!resolvedBookingNumber && source === 'manual' && shipmentData._id) {
+      try {
+        const liveDoc = await ManualShipment.findById(shipmentData._id);
+        if (liveDoc) {
+          await liveDoc.save();
+          resolvedBookingNumber = liveDoc.bookingNumber;
+        }
+      } catch (e) {
+        console.error('Failed to auto-generate bookingNumber for ManualShipment:', e);
+      }
+    }
+
     if (!resolvedBookingNumber && shipmentData.trackingNumber) {
       const bkLookup = await Booking.findOne(
         { trackingNumber: { $regex: new RegExp(`^${shipmentData.trackingNumber}$`, 'i') } },
