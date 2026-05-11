@@ -35,6 +35,7 @@ const getAdminNotificationRecipients = async () => {
 const getCustomerNotificationRecipients = (booking, reqUserEmail = null) => {
     return uniqueEmails([
         booking?.sender?.email,
+        booking?.receiver?.email,
         booking?.customer?.email,
         reqUserEmail
     ]);
@@ -1374,19 +1375,23 @@ if (allRecipients.length > 0) {
     console.log('✅ Quote rejection email sent to:', allRecipients);
 }
 
-        if (booking.sender?.email) {
+        const rejectRecipients = uniqueEmails([
+            booking.sender?.email,
+            booking.receiver?.email,
+            booking.customer?.email
+        ]);
+        for (const recipientEmail of rejectRecipients) {
             await sendEmail({
-                to: booking.sender.email,
+                to: recipientEmail,
                 subject: 'Quote Rejection Confirmed',
                 template: 'quote-rejected-customer',
                 data: {
                     bookingNumber: booking.bookingNumber,
-                    customerName: booking.sender?.name,
+                    customerName: booking.sender?.name || 'Customer',
                     reason: reason || 'No reason provided',
-                    // dashboardUrl: `${process.env.FRONTEND_URL}/customer/dashboard`,
                     supportEmail: process.env.SUPPORT_EMAIL
                 }
-            });
+            }).catch(err => console.error('Quote rejection email error:', err.message));
         }
 
         res.status(200).json({
@@ -1446,37 +1451,39 @@ exports.cancelBooking = async (req, res) => {
 
         await booking.save();
 
-        if (req.user.role === 'customer') {
-            const admins = await User.find({ role: 'admin', isActive: true });
-            
-            if (admins.length > 0) {
-                await sendEmail({
-                    to: admins.map(a => a.email),
-                    subject: '🚫 Booking Cancelled by Customer',
-                    template: 'booking-cancelled',
-                    data: {
-                        bookingNumber: booking.bookingNumber,
-                        customerName: booking.sender?.name || 'Customer',
-                        reason: reason || 'No reason provided',
-                        // dashboardUrl: `${process.env.FRONTEND_URL}/admin/bookings/${booking._id}`
-                    }
-                });
-            }
+        // Notify admins regardless of who cancels
+        const cancelAdminRecipients = await getAdminNotificationRecipients();
+        if (cancelAdminRecipients.length > 0) {
+            await sendEmail({
+                to: cancelAdminRecipients,
+                subject: `🚫 Booking Cancelled${req.user.role === 'admin' ? ' by Admin' : ' by Customer'} - ${booking.bookingNumber}`,
+                template: 'booking-cancelled',
+                data: {
+                    bookingNumber: booking.bookingNumber,
+                    customerName: booking.sender?.name || 'Customer',
+                    reason: reason || 'No reason provided'
+                }
+            }).catch(err => console.error('Cancel admin email error:', err.message));
+        }
 
-            if (booking.sender?.email) {
-                await sendEmail({
-                    to: booking.sender.email,
-                    subject: 'Your Booking Has Been Cancelled',
-                    template: 'booking-cancelled-customer',
-                    data: {
-                        bookingNumber: booking.bookingNumber,
-                        customerName: booking.sender?.name,
-                        reason: reason || 'No reason provided',
-                        // dashboardUrl: `${process.env.FRONTEND_URL}/customer/dashboard`,
-                        supportEmail: process.env.SUPPORT_EMAIL
-                    }
-                });
-            }
+        // Notify sender and receiver regardless of who cancels
+        const cancelCustomerRecipients = uniqueEmails([
+            booking.sender?.email,
+            booking.receiver?.email,
+            booking.customer?.email
+        ]);
+        for (const recipientEmail of cancelCustomerRecipients) {
+            await sendEmail({
+                to: recipientEmail,
+                subject: 'Your Booking Has Been Cancelled',
+                template: 'booking-cancelled-customer',
+                data: {
+                    bookingNumber: booking.bookingNumber,
+                    customerName: booking.sender?.name || 'Customer',
+                    reason: reason || 'No reason provided',
+                    supportEmail: process.env.SUPPORT_EMAIL
+                }
+            }).catch(err => console.error('Cancel customer email error:', err.message));
         }
 
         res.status(200).json({
