@@ -15,6 +15,7 @@ const allowedOrigins = [
   'https://samuderathai.com',
   'http://localhost:3001',
   'http://localhost:8000',
+  'https://samudera-cargo-server.vercel.app'
 ];
 
 const isAllowedOrigin = (origin) => {
