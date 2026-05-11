@@ -1335,7 +1335,8 @@ exports.trackByNumber = async (req, res) => {
 
         const shipment = await Shipment.findOne({ trackingNumber })
             .populate('customerId', 'companyName firstName lastName')
-            .select('trackingNumber status milestones trackingUpdates currentMilestone transport packages shipmentDetails actualDeliveryDate sender receiver estimatedDepartureDate estimatedArrivalDate');
+            .populate('bookingId', 'bookingNumber')
+            .select('trackingNumber status milestones trackingUpdates currentMilestone transport packages shipmentDetails actualDeliveryDate sender receiver estimatedDepartureDate estimatedArrivalDate bookingId');
 
         if (!shipment) {
             return res.status(404).json({ 
@@ -1464,6 +1465,7 @@ exports.trackByNumber = async (req, res) => {
             success: true,
             data: {
                 trackingNumber: shipment.trackingNumber,
+                bookingNumber: shipment.bookingId?.bookingNumber || shipment.transport?.bookingNumber || null,
                 status: currentStatus,
                 currentLocation: currentLocation,
                 origin: shipment.shipmentDetails?.origin || shipment.sender?.address?.country || 'China Warehouse',
