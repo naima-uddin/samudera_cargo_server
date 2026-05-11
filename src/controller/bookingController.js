@@ -3017,14 +3017,21 @@ exports.trackByNumber = async (req, res) => {
     // Resolve bookingNumber: NewShipment doesn't have a bookingNumber field — look it up from the Booking model
     let resolvedBookingNumber = shipmentData.bookingNumber;
 
-    // For ManualShipments without a bookingNumber, trigger pre-save hook to generate one
+    // For ManualShipments without a bookingNumber, generate one directly (avoid pre-save hook unreliability)
     if (!resolvedBookingNumber && source === 'manual' && shipmentData._id) {
       try {
-        const liveDoc = await ManualShipment.findById(shipmentData._id);
-        if (liveDoc) {
-          await liveDoc.save();
-          resolvedBookingNumber = liveDoc.bookingNumber;
-        }
+        const now = new Date();
+        const yy = now.getFullYear().toString().slice(-2);
+        const mm = (now.getMonth() + 1).toString().padStart(2, '0');
+        const prefix = `BKG-${yy}${mm}`;
+        const prefixRegex = new RegExp(`^${prefix}`);
+        const [bkCount, manCount] = await Promise.all([
+          Booking.countDocuments({ bookingNumber: prefixRegex }),
+          ManualShipment.countDocuments({ bookingNumber: prefixRegex })
+        ]);
+        const generatedBkNum = `${prefix}-${(bkCount + manCount + 1).toString().padStart(5, '0')}`;
+        await ManualShipment.findByIdAndUpdate(shipmentData._id, { $set: { bookingNumber: generatedBkNum } });
+        resolvedBookingNumber = generatedBkNum;
       } catch (e) {
         console.error('Failed to auto-generate bookingNumber for ManualShipment:', e);
       }
@@ -3037,6 +3044,27 @@ exports.trackByNumber = async (req, res) => {
       ).lean();
       if (bkLookup?.bookingNumber) {
         resolvedBookingNumber = bkLookup.bookingNumber;
+      }
+    }
+
+    // For NewShipment objects with no linked Booking, generate a bookingNumber and persist it
+    if (!resolvedBookingNumber && source === 'new_shipment' && shipmentData._id) {
+      try {
+        const now = new Date();
+        const yy = now.getFullYear().toString().slice(-2);
+        const mm = (now.getMonth() + 1).toString().padStart(2, '0');
+        const prefix = `BKG-${yy}${mm}`;
+        const prefixRegex = new RegExp(`^${prefix}`);
+        const [bkCount, nsCount, manCount] = await Promise.all([
+          Booking.countDocuments({ bookingNumber: prefixRegex }),
+          NewShipment.countDocuments({ bookingNumber: prefixRegex }),
+          ManualShipment.countDocuments({ bookingNumber: prefixRegex })
+        ]);
+        const generatedBkNum = `${prefix}-${(bkCount + nsCount + manCount + 1).toString().padStart(5, '0')}`;
+        await NewShipment.findByIdAndUpdate(shipmentData._id, { $set: { bookingNumber: generatedBkNum } });
+        resolvedBookingNumber = generatedBkNum;
+      } catch (e) {
+        console.error('Failed to auto-generate bookingNumber for NewShipment:', e);
       }
     }
     
