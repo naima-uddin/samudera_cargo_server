@@ -260,6 +260,9 @@ const generateInvoiceFromShipment = async (shipment) => {
 
         const invoiceNumber = await generateInvoiceNumber();
 
+        const rawEmail = shipment.customerInfo?.email || shipment.sender?.email || '';
+        const normalizedEmail = rawEmail.toLowerCase().trim();
+
         const invoice = await Invoice.create({
             invoiceNumber,
             shipmentId: shipment._id,
@@ -267,7 +270,7 @@ const generateInvoiceFromShipment = async (shipment) => {
             customerId: shipment.customerId || null,
             customerInfo: {
                 name: shipment.customerInfo?.name || shipment.sender?.name,
-                email: shipment.customerInfo?.email || shipment.sender?.email,
+                email: normalizedEmail,
                 phone: shipment.customerInfo?.phone || shipment.sender?.phone,
                 companyName: shipment.customerInfo?.companyName || shipment.sender?.companyName,
                 address: shipment.sender?.address?.addressLine1 || ''

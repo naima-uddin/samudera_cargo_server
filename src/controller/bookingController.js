@@ -1504,10 +1504,25 @@ exports.cancelBooking = async (req, res) => {
 // ========== 8. GET MY BOOKINGS (Customer) ==========
 exports.getMyBookings = async (req, res) => {
     try {
-        const { status, page = 1, limit = 10, sort = '-createdAt' } = req.query;
+        const { status, page = 1, limit = 10, sort = '-createdAt', search } = req.query;
 
         let query = buildMyBookingVisibilityQuery(req.user);
         if (status) query.status = status;
+
+        // Add search filter for bookings
+        if (search && search.trim()) {
+            const searchRegex = new RegExp(search.trim(), 'i');
+            const searchClauses = [
+                { bookingNumber: searchRegex },
+                { trackingNumber: searchRegex },
+                { 'sender.name': searchRegex },
+                { 'sender.email': searchRegex },
+                { 'receiver.name': searchRegex },
+                { 'receiver.email': searchRegex }
+            ];
+            // Combine with existing query using AND
+            query = { $and: [query, { $or: searchClauses }] };
+        }
 
         const allBookings = await Booking.find(query)
             .populate('quotedPrice.quotedBy', 'firstName lastName')
@@ -1516,7 +1531,7 @@ exports.getMyBookings = async (req, res) => {
             .sort(sort)
             .lean();
 
-        const normalizedEmail = req.user.email?.trim() || '';
+        const normalizedEmail = req.user.email?.trim().toLowerCase() || '';
         const emailRegex = new RegExp(`^${normalizedEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
         
         console.log('🔍 Manual Shipment Query Debug:');
@@ -1534,7 +1549,46 @@ exports.getMyBookings = async (req, res) => {
         };
 
         if (status) {
+            // Match either the booking-phase status OR the physical shipment status
+            newShipmentQuery.$or = [
+                ...newShipmentQuery.$or,
+                { shipmentStatus: status }
+            ];
             newShipmentQuery.status = status;
+            // Convert to AND-based query to properly combine customer filter with status filter
+            delete newShipmentQuery.status;
+            const customerClause = {
+                $or: [
+                    { customerId: req.user._id },
+                    { 'sender.email': emailRegex },
+                    { 'receiver.email': emailRegex },
+                    { 'customerInfo.email': emailRegex }
+                ]
+            };
+            const statusClause = { $or: [{ status: status }, { shipmentStatus: status }] };
+            newShipmentQuery.$and = [customerClause, statusClause];
+            delete newShipmentQuery.$or;
+        }
+
+        // Add search filter for NewShipments
+        if (search && search.trim()) {
+            const searchRegex = new RegExp(search.trim(), 'i');
+            const searchClause = {
+                $or: [
+                    { shipmentNumber: searchRegex },
+                    { trackingNumber: searchRegex },
+                    { 'sender.name': searchRegex },
+                    { 'sender.email': searchRegex },
+                    { 'receiver.name': searchRegex },
+                    { 'receiver.email': searchRegex }
+                ]
+            };
+            if (newShipmentQuery.$and) {
+                newShipmentQuery.$and.push(searchClause);
+            } else {
+                newShipmentQuery.$and = [{ $or: newShipmentQuery.$or }, searchClause];
+                delete newShipmentQuery.$or;
+            }
         }
 
         console.log('  New Shipment Query:', JSON.stringify(newShipmentQuery, null, 2));

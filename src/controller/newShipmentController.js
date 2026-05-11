@@ -687,12 +687,19 @@ exports.getMyShipments = async (req, res) => {
     console.log('🔍 User email:', req.user?.email);
 
     // Build query - search by multiple conditions
+    const userEmail = req.user.email?.toLowerCase().trim() || '';
+    const emailRegex = userEmail
+      ? new RegExp(`^${userEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i')
+      : null;
+
     let query = {
       $or: [
         { customerId: req.user._id },
-        { 'sender.email': req.user.email },
-        { 'receiver.email': req.user.email },
-        { 'customerInfo.email': req.user.email }
+        ...(emailRegex ? [
+          { 'sender.email': emailRegex },
+          { 'receiver.email': emailRegex },
+          { 'customerInfo.email': emailRegex }
+        ] : [])
       ]
     };
 

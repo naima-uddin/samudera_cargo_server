@@ -144,18 +144,26 @@ exports.ManualdeleteInvoice = async (req, res) => {
 exports.getMyManualInvoices = async (req, res) => {
     try {
         const { page = 1, limit = 20 } = req.query;
-        const userEmail = req.user?.email;
+        const userEmail = req.user?.email?.toLowerCase().trim();
         const userId = req.user?._id || req.user?.id;
         
         console.log('🔍 Fetching manual invoices for customer:', { userId, userEmail });
         
-        // Build filter for customer
+        // Build filter for customer - case-insensitive email + customerId
+        const emailRegex = userEmail
+            ? new RegExp(`^${userEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i')
+            : null;
+        
         let filter = {
             $or: [
-                { 'customerInfo.email': userEmail },
-                { createdBy: userId }
+                ...(userId ? [{ customerId: userId }] : []),
+                ...(emailRegex ? [{ 'customerInfo.email': emailRegex }] : [])
             ]
         };
+        
+        if (filter.$or.length === 0) {
+            filter.$or = [{ customerId: null }];
+        }
         
         // Pagination
         const skip = (parseInt(page) - 1) * parseInt(limit);
