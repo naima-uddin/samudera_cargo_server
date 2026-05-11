@@ -11,7 +11,7 @@ const mongoose = require('mongoose');
 const { generateInvoicePDFBuffer } = require('../service/pdfGenerator'); 
 const NewShipment = require('../models/newShipmentModel');
 const ManualShipment = require('../models/manualModel');
-const TRACK_NOTIFICATION_EMAIL = 'track@cargologisticscompany.com';
+const TRACK_NOTIFICATION_EMAIL = 'Tracking@samuderathai.com';
 
 const normalizeEmail = (email) => {
     if (!email || typeof email !== 'string') return null;
@@ -2652,9 +2652,14 @@ exports.trackByNumber = async (req, res) => {
             shippingMode: manualShipment.shipmentDetails?.shippingMode || 'DDU',
             totalPackages: manualShipment.packageDetails?.length || 0,
             totalWeight: manualShipment.shipmentDetails?.totalWeight || 0,
-            totalVolume: manualShipment.shipmentDetails?.totalVolume || 0
+                        totalVolume: manualShipment.shipmentDetails?.totalVolume || 0,
+                        containers: manualShipment.containers || [],
+                        blNumber: manualShipment.containers?.[0]?.blNumber || '',
+                        blNumbers: (manualShipment.containers || []).map((container) => container.blNumber).filter(Boolean)
           },
           packages: manualShipment.packageDetails || [],
+                    containers: manualShipment.containers || [],
+                    transport: manualShipment.transport || {},
           sender: manualShipment.sender || {
             name: manualShipment.customerName || 'Manual Shipment',
             email: manualShipment.email || '',
@@ -2808,14 +2813,15 @@ exports.trackByNumber = async (req, res) => {
         function normalizeContainerEntries(...sources) {
             const normalized = [];
 
-            const pushContainer = (containerNumber, sealNumber) => {
+            const pushContainer = (containerNumber, sealNumber, blNumber) => {
                 const nextContainer = `${containerNumber || ''}`.trim();
                 const nextSeal = `${sealNumber || ''}`.trim();
+                const nextBl = `${blNumber || ''}`.trim();
 
-                if (!nextContainer && !nextSeal) return;
+                if (!nextContainer && !nextSeal && !nextBl) return;
 
-                if (!normalized.some((item) => item.containerNumber === nextContainer && item.sealNumber === nextSeal)) {
-                    normalized.push({ containerNumber: nextContainer, sealNumber: nextSeal });
+                if (!normalized.some((item) => item.containerNumber === nextContainer && item.sealNumber === nextSeal && item.blNumber === nextBl)) {
+                    normalized.push({ containerNumber: nextContainer, sealNumber: nextSeal, blNumber: nextBl });
                 }
             };
 
@@ -2841,17 +2847,21 @@ exports.trackByNumber = async (req, res) => {
                     const sealNumbers = Array.isArray(source.sealNumbers)
                         ? source.sealNumbers
                         : `${source.sealNumber || source.sealNo || source.seal || ''}`.split(',').map((item) => item.trim()).filter(Boolean);
+                    const blNumbers = Array.isArray(source.blNumbers)
+                        ? source.blNumbers
+                        : `${source.blNumber || source.BLNumber || source.bl_number || ''}`.split(',').map((item) => item.trim()).filter(Boolean);
 
-                    const pairLength = Math.max(containerNumbers.length, sealNumbers.length);
+                    const pairLength = Math.max(containerNumbers.length, sealNumbers.length, blNumbers.length);
                     for (let index = 0; index < pairLength; index += 1) {
-                        pushContainer(containerNumbers[index], sealNumbers[index]);
+                        pushContainer(containerNumbers[index], sealNumbers[index], blNumbers[index]);
                     }
                     return;
                 }
 
                 pushContainer(
                     source.containerNumber || source.containerNo || source.container || source.number,
-                    source.sealNumber || source.sealNo || source.seal || source.sealNumber
+                    source.sealNumber || source.sealNo || source.seal || source.sealNumber,
+                    source.blNumber || source.BLNumber || source.bl_number || source.bl || source.blNo
                 );
             };
 
@@ -3024,6 +3034,7 @@ exports.trackByNumber = async (req, res) => {
           containers: shipmentContainers,
           containerNumbers: shipmentContainers.map((container) => container.containerNumber).filter(Boolean),
           sealNumbers: shipmentContainers.map((container) => container.sealNumber).filter(Boolean),
+        blNumbers: shipmentContainers.map((container) => container.blNumber).filter(Boolean),
           shipmentDetails: {
                 totalPackages: normalizedPackages.length || shipmentData.shipmentDetails?.totalPackages || 0,
         totalWeight: totalWeight,
@@ -3034,9 +3045,11 @@ exports.trackByNumber = async (req, res) => {
                 destination: shipmentData.shipmentDetails?.destination || 'USA',
             containerNumber: resolvedContainerNumber,
             sealNumber: resolvedSealNumber,
+        blNumber: shipmentContainers[0]?.blNumber || null,
             containers: shipmentContainers,
             containerNumbers: shipmentContainers.map((container) => container.containerNumber).filter(Boolean),
-            sealNumbers: shipmentContainers.map((container) => container.sealNumber).filter(Boolean)
+        sealNumbers: shipmentContainers.map((container) => container.sealNumber).filter(Boolean),
+        blNumbers: shipmentContainers.map((container) => container.blNumber).filter(Boolean)
       },
 
             consolidation: consolidationData
@@ -3053,6 +3066,8 @@ exports.trackByNumber = async (req, res) => {
 
             containerNumber: resolvedContainerNumber,
             sealNumber: resolvedSealNumber,
+            blNumber: shipmentContainers[0]?.blNumber || null,
+            transport: shipmentData.transport || {},
       
       // Sender & Receiver
       sender: shipmentData.sender || {},

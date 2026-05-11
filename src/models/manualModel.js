@@ -36,6 +36,19 @@ const manualShipmentSchema = new mongoose.Schema({
             default: 'DDU'
         }
     },
+
+    containers: [{
+        containerNumber: String,
+        sealNumber: String,
+        blNumber: String
+    }],
+
+    transport: {
+        vesselName: String,
+        voyageNumber: String,
+        flightNumber: String,
+        carrierName: String
+    },
     
     // Package Details (Manual Entry)
     packageDetails: [{

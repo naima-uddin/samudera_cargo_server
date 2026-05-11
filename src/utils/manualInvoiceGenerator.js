@@ -53,7 +53,7 @@ const generateInvoicePDF = async (invoice, shipment) => {
             doc.fontSize(24).font('Helvetica-Bold').text('Samudera Traffic Co., Ltd.S', 50, 40);
             doc.fontSize(9).font('Helvetica').text('Global Shipping & Logistics Solutions', 50, 70);
             doc.fontSize(8).text('Green Tower, 9th floor, 3656/27-28 ,Rama IV Road, Klongton-Klong Toey, Bangkok 10110, Thailand', 50, 90);
-            doc.text('Phone: +1-647-362-7735 | Email: info@cargologisticscompany.com', 50, 105);
+            doc.text('Phone: +1-647-362-7735 | Email: info@samuderathai.com', 50, 105);
             
             doc.rect(doc.page.width - 180, 40, 130, 70).fill('#E67E22');
             doc.fillColor('#ffffff');

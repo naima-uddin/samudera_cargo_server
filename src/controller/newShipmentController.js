@@ -5,7 +5,7 @@ const { generateInvoiceFromShipment, getPdfBuffer } = require('../utils/manualIn
 const { sendManualShippingStatusEmail } = require('../utils/emailService');
 const Booking = require('../models/bookingModel');
 const User = require('../models/userModel');
-const TRACK_NOTIFICATION_EMAIL = 'track@cargologisticscompany.com';
+const TRACK_NOTIFICATION_EMAIL = 'Tracking@samuderathai.com';
 
 const normalizeEmail = (email) => {
   if (!email || typeof email !== 'string') return null;
@@ -977,7 +977,7 @@ const isValidStatusTransition = (currentStatus, newStatus) => {
 exports.updateShipmentStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status, notes, resumeTo, updateDateTime, containers } = req.body;
+    const { status, notes, resumeTo, updateDateTime, containers, transport, vesselName, voyageNumber } = req.body;
     const userId = req.user?._id || req.user?.id || 'system';
 
     const STATUS_ALIASES = {
@@ -987,11 +987,14 @@ exports.updateShipmentStatus = async (req, res) => {
     };
     const normalizeStatus = (value) => STATUS_ALIASES[value] || value;
 
-    // Allow updates when status is omitted if containers are provided (shipment-level container updates)
-    if (!status && !containers) {
+    const hasContainerUpdate = Array.isArray(containers) && containers.length > 0;
+    const hasTransportUpdate = Boolean(transport || vesselName || voyageNumber);
+
+    // Allow updates when status is omitted if containers or transport details are provided.
+    if (!status && !hasContainerUpdate && !hasTransportUpdate) {
       return res.status(400).json({
         success: false,
-        message: 'Status is required unless updating only shipment containers'
+        message: 'Status is required unless updating shipment containers or transport details'
       });
     }
 
@@ -1175,10 +1178,12 @@ exports.updateShipmentStatus = async (req, res) => {
       updateData.containers = normalizedContainers;
     }
 
-    if (req.body.transport) {
+    if (hasTransportUpdate) {
       updateData.transport = {
         ...existingShipment.transport?.toObject?.(),
-        ...req.body.transport
+        ...(transport || {}),
+        ...(vesselName ? { vesselName } : {}),
+        ...(voyageNumber ? { voyageNumber } : {})
       };
     }
 
