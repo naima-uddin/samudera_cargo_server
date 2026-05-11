@@ -2696,7 +2696,215 @@ exports.trackByNumber = async (req, res) => {
     
     let shipmentData = null;
     let source = null;
-    
+    const { type = 'tracking_number' } = req.query;
+
+    console.log('📦 Search type:', type);
+
+    // Helper: build normalized ManualShipment data shape
+    const buildManualData = (m) => ({
+      trackingNumber: m.trackingNumber,
+      bookingNumber: m.bookingNumber || m._id.toString(),
+      status: m.status || 'pending',
+      shipmentDetails: {
+        origin: m.origin || 'China',
+        destination: m.destination || 'USA',
+        shippingMode: m.shipmentDetails?.shippingMode || 'DDU',
+        totalPackages: m.packageDetails?.length || 0,
+        totalWeight: m.shipmentDetails?.totalWeight || 0,
+        totalVolume: m.shipmentDetails?.totalVolume || 0,
+        containers: m.containers || [],
+        blNumber: m.containers?.[0]?.blNumber || '',
+        blNumbers: (m.containers || []).map((c) => c.blNumber).filter(Boolean),
+      },
+      packages: m.packageDetails || [],
+      containers: m.containers || [],
+      transport: m.transport || {},
+      sender: m.sender || { name: m.customerName || 'Manual Shipment', email: m.email || '', phone: m.phone || '' },
+      receiver: m.receiver || {},
+      dates: m.dates || {},
+      timeline: m.timeline || m.trackingUpdates || [],
+      createdAt: m.createdAt,
+      updatedAt: m.updatedAt,
+    });
+
+    // Helper: build normalized Booking data shape
+    const buildBookingData = (b) => ({
+      trackingNumber: b.trackingNumber,
+      bookingNumber: b.bookingNumber,
+      status: b.status,
+      shipmentDetails: b.shipmentDetails,
+      packages: b.packageDetails || b.shipmentDetails?.packageDetails || [],
+      sender: b.sender,
+      receiver: b.receiver,
+      dates: b.dates,
+      timeline: b.timeline || [],
+      createdAt: b.createdAt,
+      updatedAt: b.updatedAt,
+    });
+
+    if (type === 'booking_number') {
+      // ---- Search by bookingNumber field ----
+      console.log('🔍 Searching by booking number:', trackingNumber);
+      const bkReg = new RegExp(`^${trackingNumber}$`, 'i');
+
+      // NewShipment doesn't have bookingNumber directly, but check ManualShipment first
+      if (!shipmentData) {
+        const bkMn = await ManualShipment.findOne({ bookingNumber: bkReg }).lean();
+        if (bkMn) { source = 'manual'; shipmentData = buildManualData(bkMn); console.log('✅ Found in ManualShipment by bookingNumber'); }
+      }
+
+      // Search Booking model and then follow link to NewShipment for full timeline
+      if (!shipmentData) {
+        const bk = await Booking.findOne({ bookingNumber: bkReg }).lean();
+        if (bk) {
+          console.log('✅ Found in Booking by bookingNumber, trying to follow link to NewShipment...');
+          // Follow the link: Booking.trackingNumber → NewShipment.trackingNumber
+          if (bk.trackingNumber) {
+            const linked = await NewShipment.findOne({
+              trackingNumber: { $regex: new RegExp(`^${bk.trackingNumber}$`, 'i') }
+            })
+            .populate('customerId', 'firstName lastName companyName email phone')
+            .populate('createdBy', 'firstName lastName email').lean();
+            if (linked) {
+              source = 'new_shipment';
+              shipmentData = linked;
+              console.log('✅ Found full NewShipment via Booking.trackingNumber:', bk.trackingNumber);
+            }
+          }
+          // Also try Shipment model
+          if (!shipmentData && bk.trackingNumber) {
+            const linkedOld = await Shipment.findOne({
+              trackingNumber: { $regex: new RegExp(`^${bk.trackingNumber}$`, 'i') }
+            })
+            .populate('customerId', 'firstName lastName companyName email')
+            .populate('bookingId', 'bookingNumber sender receiver dates')
+            .populate('consolidationId', 'timeline consolidationNumber originWarehouse destinationPort').lean();
+            if (linkedOld) { source = 'shipment'; shipmentData = linkedOld; console.log('✅ Found Shipment via Booking.trackingNumber'); }
+          }
+          // Fallback: use Booking data itself (might have limited timeline)
+          if (!shipmentData) {
+            source = 'booking';
+            shipmentData = buildBookingData(bk);
+            console.log('✅ Using Booking data directly (no linked NewShipment)');
+          }
+        }
+      }
+
+      // Also try searching NewShipment's shipmentNumber field (SHP-YYMM-NNNNN)
+      if (!shipmentData) {
+        const bkF1 = await NewShipment.findOne({ shipmentNumber: bkReg })
+          .populate('customerId', 'firstName lastName companyName email phone')
+          .populate('createdBy', 'firstName lastName email').lean();
+        if (bkF1) { source = 'new_shipment'; shipmentData = bkF1; console.log('✅ Found in NewShipment by shipmentNumber'); }
+      }
+      if (!shipmentData) {
+        const bkOs = await Shipment.findOne({ bookingNumber: bkReg })
+          .populate('customerId', 'firstName lastName companyName email')
+          .populate('bookingId', 'bookingNumber sender receiver dates')
+          .populate('consolidationId', 'timeline consolidationNumber originWarehouse destinationPort').lean();
+        if (bkOs) { source = 'shipment'; shipmentData = bkOs; console.log('✅ Found in Shipment by bookingNumber'); }
+      }
+
+    } else if (type === 'container_number') {
+      // ---- Search by container number ----
+      console.log('🔍 Searching by container number:', trackingNumber);
+      const cnReg = new RegExp(`^${trackingNumber}$`, 'i');
+      const cnQ = { $or: [{ 'containers.containerNumber': cnReg }, { containerNumber: cnReg }] };
+
+      const cnF1 = await NewShipment.findOne(cnQ)
+        .populate('customerId', 'firstName lastName companyName email phone')
+        .populate('createdBy', 'firstName lastName email').lean();
+      if (cnF1) { source = 'new_shipment'; shipmentData = cnF1; console.log('✅ Found in NewShipment by containerNumber'); }
+
+      if (!shipmentData) {
+        const cnF2 = await Shipment.findOne(cnQ)
+          .populate('customerId', 'firstName lastName companyName email')
+          .populate('bookingId', 'bookingNumber sender receiver dates')
+          .populate('consolidationId', 'timeline consolidationNumber originWarehouse destinationPort').lean();
+        if (cnF2) { source = 'shipment'; shipmentData = cnF2; console.log('✅ Found in Shipment by containerNumber'); }
+      }
+      if (!shipmentData) {
+        const cnMn = await ManualShipment.findOne(cnQ).lean();
+        if (cnMn) { source = 'manual'; shipmentData = buildManualData(cnMn); console.log('✅ Found in ManualShipment by containerNumber'); }
+      }
+      // Fallback: search Consolidation (container numbers are stored there)
+      if (!shipmentData) {
+        const cnCons = await Consolidation.findOne({ $or: [
+          { containerNumber: cnReg },
+          { containerNumbers: cnReg }
+        ]}).lean();
+        if (cnCons) {
+          console.log('✅ Found Consolidation by containerNumber, finding associated Shipment...');
+          // consolidation.shipments is an array of Shipment (old model) ObjectIds
+          const shipmentIds = (cnCons.shipments || []).filter(Boolean);
+          if (shipmentIds.length > 0) {
+            const cnLinked = await Shipment.findOne({ _id: { $in: shipmentIds } })
+              .populate('customerId', 'firstName lastName companyName email')
+              .populate('bookingId', 'bookingNumber sender receiver dates')
+              .populate('consolidationId', 'timeline consolidationNumber originWarehouse destinationPort').lean();
+            if (cnLinked) { source = 'shipment'; shipmentData = cnLinked; console.log('✅ Found Shipment via Consolidation.shipments containerNumber'); }
+          }
+          // Also try: any Shipment whose consolidationId points to this consolidation
+          if (!shipmentData) {
+            const cnByRef = await Shipment.findOne({ consolidationId: cnCons._id })
+              .populate('customerId', 'firstName lastName companyName email')
+              .populate('bookingId', 'bookingNumber sender receiver dates')
+              .populate('consolidationId', 'timeline consolidationNumber originWarehouse destinationPort').lean();
+            if (cnByRef) { source = 'shipment'; shipmentData = cnByRef; console.log('✅ Found Shipment via consolidationId containerNumber'); }
+          }
+        }
+      }
+
+    } else if (type === 'bl_number') {
+      // ---- Search by BL number ----
+      console.log('🔍 Searching by BL number:', trackingNumber);
+      const blReg = new RegExp(`^${trackingNumber}$`, 'i');
+      const blQ = { $or: [{ 'containers.blNumber': blReg }, { blNumber: blReg }] };
+
+      const blF1 = await NewShipment.findOne(blQ)
+        .populate('customerId', 'firstName lastName companyName email phone')
+        .populate('createdBy', 'firstName lastName email').lean();
+      if (blF1) { source = 'new_shipment'; shipmentData = blF1; console.log('✅ Found in NewShipment by blNumber'); }
+
+      if (!shipmentData) {
+        const blF2 = await Shipment.findOne(blQ)
+          .populate('customerId', 'firstName lastName companyName email')
+          .populate('bookingId', 'bookingNumber sender receiver dates')
+          .populate('consolidationId', 'timeline consolidationNumber originWarehouse destinationPort').lean();
+        if (blF2) { source = 'shipment'; shipmentData = blF2; console.log('✅ Found in Shipment by blNumber'); }
+      }
+      if (!shipmentData) {
+        const blMn = await ManualShipment.findOne(blQ).lean();
+        if (blMn) { source = 'manual'; shipmentData = buildManualData(blMn); console.log('✅ Found in ManualShipment by blNumber'); }
+      }
+      // Fallback: search Consolidation (BL numbers are stored there)
+      if (!shipmentData) {
+        const blCons = await Consolidation.findOne({ $or: [
+          { blNumber: blReg },
+          { blNumbers: blReg }
+        ]}).lean();
+        if (blCons) {
+          console.log('✅ Found Consolidation by blNumber, finding associated Shipment...');
+          const shipmentIds = (blCons.shipments || []).filter(Boolean);
+          if (shipmentIds.length > 0) {
+            const blLinked = await Shipment.findOne({ _id: { $in: shipmentIds } })
+              .populate('customerId', 'firstName lastName companyName email')
+              .populate('bookingId', 'bookingNumber sender receiver dates')
+              .populate('consolidationId', 'timeline consolidationNumber originWarehouse destinationPort').lean();
+            if (blLinked) { source = 'shipment'; shipmentData = blLinked; console.log('✅ Found Shipment via Consolidation.shipments blNumber'); }
+          }
+          if (!shipmentData) {
+            const blByRef = await Shipment.findOne({ consolidationId: blCons._id })
+              .populate('customerId', 'firstName lastName companyName email')
+              .populate('bookingId', 'bookingNumber sender receiver dates')
+              .populate('consolidationId', 'timeline consolidationNumber originWarehouse destinationPort').lean();
+            if (blByRef) { source = 'shipment'; shipmentData = blByRef; console.log('✅ Found Shipment via consolidationId blNumber'); }
+          }
+        }
+      }
+
+    } else {
+    // ---- Default: search by tracking number ----
     // 1️⃣ First check in NewShipment model (এইটা এখন সবচেয়ে গুরুত্বপূর্ণ)
     console.log('🔍 Searching in NewShipment model...');
     
@@ -2801,10 +3009,11 @@ exports.trackByNumber = async (req, res) => {
         };
       }
     }
-    
+    } // end else: tracking_number search
+
     // If not found anywhere
     if (!shipmentData) {
-      console.log('❌ Tracking number not found in any model');
+      console.log('❌ Not found in any model for type:', type);
       
       // Debug: Show sample tracking numbers from NewShipment
       const sampleShipments = await NewShipment.find({}, 'trackingNumber').limit(5);
@@ -2812,9 +3021,10 @@ exports.trackByNumber = async (req, res) => {
       
       return res.status(404).json({
         success: false,
-        message: `Tracking number "${trackingNumber}" not found`,
+        message: `No shipment found for ${type.replace(/_/g, ' ')}: "${trackingNumber}"`,
         debug: {
           searchedNumber: trackingNumber,
+          searchType: type,
           modelsChecked: ['NewShipment', 'Shipment', 'Booking', 'ManualShipment'],
           sampleTrackingNumbers: sampleShipments.map(s => s.trackingNumber)
         }
