@@ -14,6 +14,7 @@ const allowedOrigins = [
   'https://api.samuderathai.com',
   'https://samuderathai.com',
   'http://localhost:3001',
+  'http://localhost:3000',
   'http://localhost:8000',
   'https://samudera-cargo-server.vercel.app'
 ];
@@ -29,6 +30,14 @@ const isAllowedOrigin = (origin) => {
 
   // Allow Vercel preview/prod domains and the production custom domains.
   if (/^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin)) {
+    return true;
+  }
+
+  if (/^http:\/\/localhost:\d+$/i.test(origin)) {
+    return true;
+  }
+
+  if (/^http:\/\/127\.0\.0\.1:\d+$/i.test(origin)) {
     return true;
   }
 

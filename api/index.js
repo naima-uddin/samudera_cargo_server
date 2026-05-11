@@ -5,7 +5,8 @@ const allowedOrigins = [
 	'https://api.samuderathai.com',
 	'https://remarkable-flan-2a9036.netlify.app',
 	'https://samuderathai.com',
-	'http://localhost:3001'
+	'http://localhost:3001',
+	'http://localhost:3000'
 ];
 
 const isAllowedOrigin = (origin) => {
@@ -18,6 +19,14 @@ const isAllowedOrigin = (origin) => {
 	}
 
 	if (/^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin)) {
+		return true;
+	}
+
+	if (/^http:\/\/localhost:\d+$/i.test(origin)) {
+		return true;
+	}
+
+	if (/^http:\/\/127\.0\.0\.1:\d+$/i.test(origin)) {
 		return true;
 	}
 
