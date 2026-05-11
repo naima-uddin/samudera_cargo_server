@@ -60,6 +60,33 @@ const formatDate = (date) => {
     });
 };
 
+const renderShipmentDetails = (data, options = {}) => {
+    const title = options.title || 'Shipment Details';
+    const rows = [
+        ['Booking Number', data.bookingNumber],
+        ['Tracking Number', data.trackingNumber],
+        ['Container Number', data.containerNumber],
+        ['Seal Number', data.sealNumber],
+        ['BL Number', data.blNumber],
+        ['Vessel Name', data.vesselName],
+        ['Voyage Number', data.voyageNumber]
+    ]
+        .filter(([, value]) => value)
+        .map(([label, value]) => `<p><strong>${label}:</strong> ${value}</p>`)
+        .join('');
+
+    if (!rows) {
+        return '';
+    }
+
+    return `
+        <div class="info-box">
+            <h3>${title}</h3>
+            ${rows}
+        </div>
+    `;
+};
+
 // Email templates
 const templates = {
     // ========== BOOKING TEMPLATES ==========
@@ -99,10 +126,12 @@ const templates = {
                             <p><strong>Destination:</strong> ${data.destination || 'N/A'}</p>
                             <p><strong>Shipment Type:</strong> ${data.shipmentType || 'Not specified'}</p>
                             <p><strong>Total Cartons:</strong> ${data.totalCartons ?? 0}</p>
+                        ${renderShipmentDetails(data, { title: 'Transport & Cargo Details' })}
                             <p><strong>Total Weight:</strong> ${data.totalWeight ?? 0} kg</p>
                             <p><strong>Total Volume:</strong> ${data.totalVolume || 0} m³</p>
                             <p><strong>Requested Date:</strong> ${formatDate(data.requestedDate)}</p>
                         </div> 
+                        ${renderShipmentDetails(data, { title: 'Shipment Tracking Details' })}
                         
                         <p><strong>Next Steps:</strong> Please review the booking details and provide a price quote within 24 hours.</p>
                     </div>
@@ -433,6 +462,7 @@ const templates = {
                         <p><strong>Booking Number:</strong> ${data.bookingNumber}</p>
                         <p><strong>Quoted Amount:</strong> ${formatCurrency(data.quotedAmount, data.currency)}</p>
                         <p><strong>Invoice Number:</strong> ${data.invoiceNumber || 'Processing'}</p>
+                        ${renderShipmentDetails(data, { title: 'Booking Tracking Details' })}
                         
  
  
@@ -474,6 +504,7 @@ const templates = {
                         <p><strong>Tracking Number:</strong> ${data.trackingNumber}</p>
                         <p><strong>Origin:</strong> ${data.origin}</p>
                         <p><strong>Destination:</strong> ${data.destination}</p>
+                        ${renderShipmentDetails(data, { title: 'Shipment Tracking Details' })}
                         
   
                     </div>
@@ -511,6 +542,7 @@ const templates = {
                         <p><strong>Customer:</strong> ${data.customerName}</p>
                         <p><strong>Origin:</strong> ${data.origin}</p>
                         <p><strong>Destination:</strong> ${data.destination}</p>
+                        ${renderShipmentDetails(data, { title: 'Shipment Tracking Details' })}
                         
                         <div style="text-align: center; margin: 30px 0;">
                             <a href="${data.shipmentUrl}" style="background: #17a2b8; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px;">Start Processing</a>
@@ -1001,6 +1033,7 @@ const templates = {
                             <p><strong>Description:</strong> ${data.description}</p>
                             <p><strong>Time:</strong> ${formatDate(data.timestamp)}</p>
                         </div>
+                        ${renderShipmentDetails(data, { title: 'Shipment Tracking Details' })}
                         
                         <div style="text-align: center; margin: 30px 0;">
                             <a href="${data.trackingUrl}" style="background: #17a2b8; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px;">Track Shipment</a>
@@ -1355,7 +1388,11 @@ const templates = {
                             <p><strong>Consolidation Number:</strong> ${data.consolidationNumber}</p>
                             <p><strong>Shipments Included:</strong> ${data.shipmentCount}</p>
                             <p><strong>Destination:</strong> ${data.destination}</p>
+                            ${data.containerNumber ? `<p><strong>Container Number:</strong> ${data.containerNumber}</p>` : ''}
                             ${data.sealNumber ? `<p><strong>Seal Number:</strong> ${data.sealNumber}</p>` : ''}
+                            ${data.blNumber ? `<p><strong>BL Number:</strong> ${data.blNumber}</p>` : ''}
+                            ${data.vesselName ? `<p><strong>Vessel Name:</strong> ${data.vesselName}</p>` : ''}
+                            ${data.voyageNumber ? `<p><strong>Voyage Number:</strong> ${data.voyageNumber}</p>` : ''}
                         </div>
                         <p>You will receive further tracking updates as your shipment progresses. Thank you for choosing Samudera Cargo Logistics.</p>
                     </div>
@@ -1392,7 +1429,11 @@ const templates = {
                             <p><strong>Consolidation Number:</strong> ${data.consolidationNumber}</p>
                             <p><strong>Shipments Included:</strong> ${data.shipmentCount}</p>
                             <p><strong>Destination:</strong> ${data.destination}</p>
+                            ${data.containerNumber ? `<p><strong>Container Number:</strong> ${data.containerNumber}</p>` : ''}
                             ${data.sealNumber ? `<p><strong>Seal Number:</strong> ${data.sealNumber}</p>` : ''}
+                            ${data.blNumber ? `<p><strong>BL Number:</strong> ${data.blNumber}</p>` : ''}
+                            ${data.vesselName ? `<p><strong>Vessel Name:</strong> ${data.vesselName}</p>` : ''}
+                            ${data.voyageNumber ? `<p><strong>Voyage Number:</strong> ${data.voyageNumber}</p>` : ''}
                         </div>
                     </div>
                 </div>
@@ -1431,6 +1472,7 @@ const templates = {
                             <p><strong>Location:</strong> ${data.location || 'In Transit'}</p>
                             ${data.description ? `<p><strong>Details:</strong> ${data.description}</p>` : ''}
                         </div>
+                        ${renderShipmentDetails(data, { title: 'Shipment Tracking Details' })}
                         ${data.trackingUrl ? `<div style="text-align: center; margin: 20px 0;"><a href="${data.trackingUrl}" class="button">Track Your Shipment</a></div>` : ''}
                     </div>
                 </div>

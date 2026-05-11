@@ -756,7 +756,11 @@ exports.createConsolidation = async (req, res) => {
                                 q.customerId?._id.toString() === customer._id.toString()
                             ).length,
                             destination: firstItem.destination,
-                            sealNumber: finalSealNumber
+                        containerNumber: finalContainerNumber,
+                        sealNumber: finalSealNumber,
+                        blNumber: req.body.blNumber || '',
+                        vesselName: req.body.vesselName || '',
+                        voyageNumber: req.body.voyageNumber || ''
                         }
                     });
                 }
@@ -780,7 +784,11 @@ exports.createConsolidation = async (req, res) => {
                         consolidationNumber: consolidation.consolidationNumber,
                         shipmentCount: queueItems.length,
                         destination: firstItem.destination,
-                        sealNumber: finalSealNumber
+                    containerNumber: finalContainerNumber,
+                    sealNumber: finalSealNumber,
+                    blNumber: req.body.blNumber || '',
+                    vesselName: req.body.vesselName || '',
+                    voyageNumber: req.body.voyageNumber || ''
                     }
                 });
             }

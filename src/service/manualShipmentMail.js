@@ -89,6 +89,24 @@ const getSenderEmailTemplate = (shipment) => {
                         `).join('') || '<p>No package details available</p>'}
                     </div>
                     
+                    ${(() => {
+                        const hasTransport = shipment.transport?.vesselName || shipment.transport?.voyageNumber;
+                        const containers = shipment.containers || [];
+                        if (!hasTransport && containers.length === 0) return '';
+                        return `
+                    <div class="details">
+                        <h3>Transport &amp; Container Details:</h3>
+                        ${shipment.transport?.vesselName ? `<p><strong>Vessel Name:</strong> ${shipment.transport.vesselName}</p>` : ''}
+                        ${shipment.transport?.voyageNumber ? `<p><strong>Voyage Number:</strong> ${shipment.transport.voyageNumber}</p>` : ''}
+                        ${containers.map((c, i) => `
+                            ${containers.length > 1 ? `<p><strong>Container ${i + 1}:</strong></p>` : ''}
+                            ${c.containerNumber ? `<p><strong>Container Number:</strong> ${c.containerNumber}</p>` : ''}
+                            ${c.sealNumber ? `<p><strong>Seal Number:</strong> ${c.sealNumber}</p>` : ''}
+                            ${c.blNumber ? `<p><strong>BL Number:</strong> ${c.blNumber}</p>` : ''}
+                        `).join('')}
+                    </div>`;
+                    })()}
+                    
                     <center>
                         <a href="${trackingLink}" class="tracking-btn">Track Your Shipment</a>
                     </center>
@@ -137,6 +155,24 @@ const getReceiverEmailTemplate = (shipment) => {
                         <p><strong>Destination:</strong> ${shipment.shipmentDetails?.destination}</p>
                         <p><strong>Estimated Delivery:</strong> ${shipment.dates?.estimatedArrival ? new Date(shipment.dates.estimatedArrival).toLocaleDateString() : 'To be confirmed'}</p>
                     </div>
+                    
+                    ${(() => {
+                        const hasTransport = shipment.transport?.vesselName || shipment.transport?.voyageNumber;
+                        const containers = shipment.containers || [];
+                        if (!hasTransport && containers.length === 0) return '';
+                        return `
+                    <div class="details">
+                        <h3>Transport &amp; Container Details:</h3>
+                        ${shipment.transport?.vesselName ? `<p><strong>Vessel Name:</strong> ${shipment.transport.vesselName}</p>` : ''}
+                        ${shipment.transport?.voyageNumber ? `<p><strong>Voyage Number:</strong> ${shipment.transport.voyageNumber}</p>` : ''}
+                        ${containers.map((c, i) => `
+                            ${containers.length > 1 ? `<p><strong>Container ${i + 1}:</strong></p>` : ''}
+                            ${c.containerNumber ? `<p><strong>Container Number:</strong> ${c.containerNumber}</p>` : ''}
+                            ${c.sealNumber ? `<p><strong>Seal Number:</strong> ${c.sealNumber}</p>` : ''}
+                            ${c.blNumber ? `<p><strong>BL Number:</strong> ${c.blNumber}</p>` : ''}
+                        `).join('')}
+                    </div>`;
+                    })()}
                     
                     <p>You can track your parcel using the tracking number: <strong>${shipment.trackingNumber}</strong></p>
                     <p>For any questions about delivery, please contact our support team.</p>
@@ -200,6 +236,24 @@ const getAdminEmailTemplate = (shipment) => {
                         <p><strong>Email:</strong> ${shipment.receiver?.email || 'N/A'}</p>
                         <p><strong>Phone:</strong> ${shipment.receiver?.phone || 'N/A'}</p>
                     </div>
+                    
+                    ${(() => {
+                        const hasTransport = shipment.transport?.vesselName || shipment.transport?.voyageNumber;
+                        const containers = shipment.containers || [];
+                        if (!hasTransport && containers.length === 0) return '';
+                        return `
+                    <div class="details">
+                        <h3>Transport &amp; Container Details:</h3>
+                        ${shipment.transport?.vesselName ? `<p><strong>Vessel Name:</strong> ${shipment.transport.vesselName}</p>` : ''}
+                        ${shipment.transport?.voyageNumber ? `<p><strong>Voyage Number:</strong> ${shipment.transport.voyageNumber}</p>` : ''}
+                        ${containers.map((c, i) => `
+                            ${containers.length > 1 ? `<p><strong>Container ${i + 1}:</strong></p>` : ''}
+                            ${c.containerNumber ? `<p><strong>Container Number:</strong> ${c.containerNumber}</p>` : ''}
+                            ${c.sealNumber ? `<p><strong>Seal Number:</strong> ${c.sealNumber}</p>` : ''}
+                            ${c.blNumber ? `<p><strong>BL Number:</strong> ${c.blNumber}</p>` : ''}
+                        `).join('')}
+                    </div>`;
+                    })()}
                     
                     <div class="details">
                         <h3>Financial Information:</h3>
