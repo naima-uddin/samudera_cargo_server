@@ -333,6 +333,18 @@ exports.getTrackingById = async (req, res) => {
                     hazardous: pkg.hazardous,
                     temperatureControlled: pkg.temperatureControlled?.required
                 }));
+
+                // Attach consolidation convenience fields so frontend can read vessel/bl/container easily
+                if (trackingData.consolidationId) {
+                    const c = trackingData.consolidationId;
+                    trackingData.consolidation = c;
+                    trackingData.containerNumber = trackingData.containerNumber || c.containerNumber || undefined;
+                    trackingData.sealNumber = trackingData.sealNumber || c.sealNumber || undefined;
+                    // prefer explicit blNumber, else join blNumbers array
+                    trackingData.blNumber = trackingData.blNumber || c.blNumber || (Array.isArray(c.blNumbers) ? c.blNumbers.join(', ') : undefined);
+                    trackingData.vesselName = trackingData.vesselName || c.vesselName || (c.carrier && c.carrier.vesselNumber) || undefined;
+                    trackingData.voyageNumber = trackingData.voyageNumber || c.voyageNumber || undefined;
+                }
             }
         }
 

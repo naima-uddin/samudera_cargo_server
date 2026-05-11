@@ -978,9 +978,27 @@ exports.updateConsolidation = async (req, res) => {
             });
         }
 
-        // Prevent updates to certain fields if already departed
+        // Normalize array fields into top-level values when present
+        if (updates.containerNumbers && !updates.containerNumber) {
+            updates.containerNumber = Array.isArray(updates.containerNumbers)
+                ? updates.containerNumbers.filter(Boolean).join(', ')
+                : updates.containerNumbers;
+        }
+        if (updates.sealNumbers && !updates.sealNumber) {
+            updates.sealNumber = Array.isArray(updates.sealNumbers)
+                ? updates.sealNumbers.filter(Boolean).join(', ')
+                : updates.sealNumbers;
+        }
+        if (updates.blNumbers && !updates.blNumber) {
+            updates.blNumber = Array.isArray(updates.blNumbers)
+                ? updates.blNumbers.filter(Boolean).join(', ')
+                : updates.blNumbers;
+        }
+
+        // Prevent updates to critical structure fields if already departed
         if (consolidation.status === 'departed' || consolidation.status === 'arrived') {
-            const restrictedFields = ['shipments', 'items', 'containerNumber', 'mainType', 'subType'];
+            const restrictedFields = ['shipments', 'items', 'mainType', 'subType'];
+
             for (const field of restrictedFields) {
                 if (updates[field]) {
                     return res.status(400).json({
