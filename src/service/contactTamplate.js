@@ -7,12 +7,16 @@ const nodemailer = require('nodemailer');
 // ========== Email Transporter ==========
 const createTransporter = () => {
   return nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.SMTP_PORT) || 587,
+    host: process.env.SMTP_HOST || 'mail.samuderathai.com',
+    port: parseInt(process.env.SMTP_PORT) || 465,
     secure: process.env.SMTP_SECURE === 'true',
     auth: {
       user: process.env.SMTP_USER_INFO,
       pass: process.env.SMTP_PASS_INFO,
+    },
+    tls: {
+      rejectUnauthorized: false,
+      ciphers: 'SSLv3'
     },
   });
 };

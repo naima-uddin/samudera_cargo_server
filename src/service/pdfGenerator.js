@@ -69,7 +69,7 @@ async function generateInvoicePDFBuffer(invoice, companyInfo, trackingNumber) {
                .font('Helvetica')
                .text(companyInfo?.address || 'Green Tower, 9th floor, 3656/27-28 Rama IV Road', 50, 56)
                .text(companyInfo?.city || 'Klongton-Klong Toey Bangkok 10110, Thailand', 50, 69)
-               .text(`Phone: ${companyInfo?.phone || '+66 2 105 6119'}`, 50, 82);
+               .text(`Phone: ${companyInfo?.phone || '+66977830395'}`, 50, 82);
             
             doc.fillColor(colors.accent)
                .rect(doc.page.width - 175, 28, 125, 42)

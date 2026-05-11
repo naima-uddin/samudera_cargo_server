@@ -48,27 +48,49 @@ const sendTemplateEmailPerRecipient = async ({ recipients = [], subject, templat
         }
     }
 };
-// ========== HELPER FUNCTIONS ==========
-// ==================== মিসিং হেল্পার ফাংশনগুলো ====================
-// এই ফাংশনগুলো আপনার ফাইলের একদম উপরে, অন্যান্য হেল্পার ফাংশনের পরে যোগ করুন
 
-// লোকেশন ডিটারমাইন ফাংশন
-// const getLocationForStatus = (status, originalLocation, shipment) => {
-//     // In Transit এর জন্য
-//     if (status.includes('transit') || status === 'in_transit' || status === 'in_transit_sea_freight') {
-//         if (shipment.consolidationId?.vesselName) {
-//             return `In Transit - ${shipment.consolidationId.vesselName}`;
-//         }
-//         if (shipment.shipmentDetails?.destination) {
-//             return `In Transit to ${shipment.shipmentDetails.destination}`;
-//         }
-//         return 'In Transit to Destination';
-//     }
-    
-//     // Dispatched এর জন্য
-//     if (status.includes('dispatch')) {
-//         return 'Departed from Origin';
-//     }
+const buildMyBookingVisibilityQuery = (user) => {
+    const clauses = [];
+
+    if (user?._id) {
+        clauses.push({ customer: user._id });
+        clauses.push({ createdBy: user._id });
+    }
+
+    const email = normalizeEmail(user?.email);
+    if (email) {
+        const emailRegex = new RegExp(`^${email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i');
+        clauses.push({ 'sender.email': emailRegex });
+        clauses.push({ 'receiver.email': emailRegex });
+    }
+
+    if (clauses.length === 0) {
+        return {};
+    }
+
+    return { $or: clauses };
+};
+
+const canUserAccessBooking = (booking, user) => {
+    if (!booking || !user) return false;
+
+    const userId = user._id?.toString?.() || String(user._id || '');
+    const bookingCustomerId = booking.customer?._id?.toString?.() || booking.customer?.toString?.() || String(booking.customer || '');
+    const bookingCreatedById = booking.createdBy?._id?.toString?.() || booking.createdBy?.toString?.() || String(booking.createdBy || '');
+    const userEmail = normalizeEmail(user.email);
+    const senderEmail = normalizeEmail(booking.sender?.email);
+    const receiverEmail = normalizeEmail(booking.receiver?.email);
+
+    if (userId && (bookingCustomerId === userId || bookingCreatedById === userId)) {
+        return true;
+    }
+
+    if (userEmail && (senderEmail === userEmail || receiverEmail === userEmail)) {
+        return true;
+    }
+
+    return false;
+};
     
 //     // Departed এর জন্য
 //     if (status.includes('depart')) {
@@ -496,7 +518,7 @@ exports.getBookingById = async (req, res) => {
             });
         }
         
-        // Check permission (customer can only see their own)
+            console.log('2. Booking found:', booking.bookingNumber);
         if (req.user.role === 'customer' && booking.customer._id.toString() !== req.user._id.toString()) {
             return res.status(403).json({ 
                 success: false, 
@@ -614,46 +636,54 @@ exports.updatePriceQuote = async (req, res) => {
         await booking.save();
 
         const customerRecipients = getCustomerNotificationRecipients(booking, req.user?.email);
+        const customerName = booking.customer?.firstName || booking.customer?.lastName
+            ? `${booking.customer?.firstName || ''} ${booking.customer?.lastName || ''}`.trim()
+            : booking.sender?.name || 'Customer';
+        const customerEmail = booking.customer?.email || booking.sender?.email || 'N/A';
 
-        // Send email notification to customer
-        if (customerRecipients.length > 0) {
-            await sendTemplateEmailPerRecipient({
-                recipients: customerRecipients,
-                subject: `💰 ${isUpdate ? 'Updated' : 'New'} Price Quote for Your Booking`,
-                template: 'price-quote-ready',
-                data: {
-                    bookingNumber: booking.bookingNumber,
-                    customerName: booking.customer.firstName || 'Customer',
-                    quotedAmount: amount,
-                    currency: currency,
-                    validUntil: booking.quotedPrice.validUntil,
-                    breakdown: breakdown,
-                    isUpdate: isUpdate,
-                    previousAmount: previousAmount
-                }
-            });
-        }
+        try {
+            // Send email notification to customer
+            if (customerRecipients.length > 0) {
+                await sendTemplateEmailPerRecipient({
+                    recipients: customerRecipients,
+                    subject: `💰 ${isUpdate ? 'Updated' : 'New'} Price Quote for Your Booking`,
+                    template: 'price-quote-ready',
+                    data: {
+                        bookingNumber: booking.bookingNumber,
+                        customerName,
+                        quotedAmount: amount,
+                        currency,
+                        validUntil: booking.quotedPrice.validUntil,
+                        breakdown: breakdown || {},
+                        isUpdate,
+                        previousAmount
+                    }
+                });
+            }
 
-        // Send quote update notification to all admins + track mailbox
-        const adminRecipients = await getAdminNotificationRecipients();
-        if (adminRecipients.length > 0) {
-            await sendTemplateEmailPerRecipient({
-                recipients: adminRecipients,
-                subject: `💰 ${isUpdate ? 'Quote Updated' : 'Quote Created'} - ${booking.bookingNumber}`,
-                template: 'price-quote-admin-notification',
-                data: {
-                    bookingNumber: booking.bookingNumber,
-                    customerName: booking.sender?.name || booking.customer?.firstName || 'Customer',
-                    customerEmail: booking.customer?.email || 'N/A',
-                    quotedAmount: amount,
-                    currency,
-                    validUntil: booking.quotedPrice.validUntil,
-                    breakdown,
-                    isUpdate,
-                    previousAmount,
-                    updatedBy: `${req.user?.firstName || ''} ${req.user?.lastName || ''}`.trim() || req.user?.email || 'Admin'
-                }
-            });
+            // Send quote update notification to all admins + track mailbox
+            const adminRecipients = await getAdminNotificationRecipients();
+            if (adminRecipients.length > 0) {
+                await sendTemplateEmailPerRecipient({
+                    recipients: adminRecipients,
+                    subject: `💰 ${isUpdate ? 'Quote Updated' : 'Quote Created'} - ${booking.bookingNumber}`,
+                    template: 'price-quote-admin-notification',
+                    data: {
+                        bookingNumber: booking.bookingNumber,
+                        customerName: booking.sender?.name || customerName,
+                        customerEmail,
+                        quotedAmount: amount,
+                        currency,
+                        validUntil: booking.quotedPrice.validUntil,
+                        breakdown: breakdown || {},
+                        isUpdate,
+                        previousAmount,
+                        updatedBy: `${req.user?.firstName || ''} ${req.user?.lastName || ''}`.trim() || req.user?.email || 'Admin'
+                    }
+                });
+            }
+        } catch (notificationError) {
+            console.error('Quote notification error:', notificationError);
         }
 
         res.status(200).json({
@@ -694,18 +724,28 @@ exports.acceptQuote = async (req, res) => {
         console.log('2. Booking found:', booking.bookingNumber);
         console.log('3. Customer email:', booking.customer?.email);
 
-        // Security check
-        if (booking.customer._id.toString() !== req.user._id.toString()) {
+        if (!canUserAccessBooking(booking, req.user)) {
             return res.status(403).json({ 
                 success: false, 
                 message: 'You can only accept your own bookings' 
             });
         }
 
+        const customerId = booking.customer?._id || booking.customerId || req.user._id;
+
+        // Check pricing status with detailed logging
+        console.log('4. Checking pricing status:', {
+            pricingStatus: booking.pricingStatus,
+            quotedPrice: !!booking.quotedPrice,
+            customerResponse: booking.customerResponse
+        });
+
         if (booking.pricingStatus !== 'quoted') {
             return res.status(400).json({ 
                 success: false, 
-                message: 'No active price quote found' 
+                message: `No active price quote found. Current status: ${booking.pricingStatus}`,
+                currentStatus: booking.pricingStatus,
+                quotedPrice: !!booking.quotedPrice
             });
         }
 
@@ -806,7 +846,7 @@ exports.acceptQuote = async (req, res) => {
                 shipmentNumber: shipmentNumber,
                 trackingNumber: trackingNumber,
                 bookingId: booking._id,
-                customerId: booking.customer._id,
+                customerId: customerId,
                 createdBy: req.user._id,
                 
                 shipmentClassification: {
@@ -996,7 +1036,7 @@ try {
     const invoiceData = {
         bookingId: booking._id,
         shipmentId: shipment?._id,
-        customerId: booking.customer._id,
+        customerId: customerId,
         
         customerInfo: {
             companyName: booking.sender?.companyName || '',
@@ -1044,7 +1084,7 @@ try {
             name: 'Samudera Traffic Co., Ltd.s Group',
             address: 'Green Tower, 9th floor, 3656/27-28 Rama IV Road',
             city: 'Klongton-Klong Toey Bangkok 10110, Thailand',
-            phone: '+66 2 367 3747',
+            phone: '+66977830395',
             email: 'info@cargologistics.com',
             website: 'www.cargologistics.com'
         };
@@ -1077,7 +1117,7 @@ if (!pdfBuffer && invoice) {
             name: 'Samudera Traffic Co., Ltd.s Group',
             address: 'Green Tower, 9th floor, 3656/27-28Rama IV Road',
             city: 'Klongton-Klong Toey Bangkok 10110, Thailand',
-            phone: '+66 2 367 3747',
+            phone: '+66977830395',
             email: 'info@cargologistics.com',
             website: 'www.cargologistics.com'
         };
@@ -1265,17 +1305,24 @@ exports.rejectQuote = async (req, res) => {
             });
         }
 
-        if (booking.customer._id.toString() !== req.user._id.toString()) {
+        if (!canUserAccessBooking(booking, req.user)) {
             return res.status(403).json({ 
                 success: false, 
                 message: 'Access denied' 
             });
         }
 
+        // Check pricing status with detailed logging
+        console.log('Checking pricing status for reject:', {
+            pricingStatus: booking.pricingStatus,
+            quotedPrice: !!booking.quotedPrice
+        });
+
         if (booking.pricingStatus !== 'quoted') {
             return res.status(400).json({ 
                 success: false, 
-                message: 'No active price quote found' 
+                message: `No active price quote found. Current status: ${booking.pricingStatus}`,
+                currentStatus: booking.pricingStatus
             });
         }
 
@@ -1452,7 +1499,7 @@ exports.getMyBookings = async (req, res) => {
     try {
         const { status, page = 1, limit = 10, sort = '-createdAt' } = req.query;
 
-        let query = { customer: req.user._id };
+        let query = buildMyBookingVisibilityQuery(req.user);
         if (status) query.status = status;
 
         const allBookings = await Booking.find(query)
@@ -1492,6 +1539,9 @@ exports.getMyBookings = async (req, res) => {
             _id: shipment._id,
             bookingNumber: shipment.bookingNumber || shipment.shipmentNumber,
             status: shipment.status || shipment.shipmentStatus || 'pending',
+            pricingStatus: shipment.pricingStatus || 'quoted',
+            quotedPrice: shipment.quotedPrice || null,
+            customerResponse: shipment.customerResponse || null,
             shipmentDetails: shipment.shipmentDetails || {
                 origin: 'N/A',
                 destination: 'N/A',
@@ -1578,10 +1628,7 @@ exports.getMyBookingById = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const booking = await Booking.findOne({
-            _id: id,
-            customer: req.user._id
-        })
+        const booking = await Booking.findById(id)
         .populate('quotedPrice.quotedBy', 'firstName lastName')
         .populate('shipmentId')
         .populate('invoiceId')
@@ -1591,6 +1638,13 @@ exports.getMyBookingById = async (req, res) => {
             return res.status(404).json({ 
                 success: false, 
                 message: 'Booking not found' 
+            });
+        }
+
+        if (!canUserAccessBooking(booking, req.user)) {
+            return res.status(403).json({ 
+                success: false, 
+                message: 'Access denied' 
             });
         }
 
@@ -1627,16 +1681,20 @@ exports.getMyBookingTimeline = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const booking = await Booking.findOne({
-            _id: id,
-            customer: req.user._id
-        })
+        const booking = await Booking.findById(id)
         .select('bookingNumber status timeline createdAt updatedAt');
 
         if (!booking) {
             return res.status(404).json({ 
                 success: false, 
                 message: 'Booking not found' 
+            });
+        }
+
+        if (!canUserAccessBooking(booking, req.user)) {
+            return res.status(403).json({ 
+                success: false, 
+                message: 'Access denied' 
             });
         }
 
@@ -1673,10 +1731,7 @@ exports.getMyBookingInvoice = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const booking = await Booking.findOne({
-            _id: id,
-            customer: req.user._id
-        }).populate({
+        const booking = await Booking.findById(id).populate({
             path: 'invoiceId',
             select: 'invoiceNumber totalAmount currency paymentStatus dueDate createdAt charges'
         });
@@ -1685,6 +1740,13 @@ exports.getMyBookingInvoice = async (req, res) => {
             return res.status(404).json({ 
                 success: false, 
                 message: 'Booking not found' 
+            });
+        }
+
+        if (!canUserAccessBooking(booking, req.user)) {
+            return res.status(403).json({ 
+                success: false, 
+                message: 'Access denied' 
             });
         }
 
@@ -1714,10 +1776,7 @@ exports.getMyBookingQuote = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const booking = await Booking.findOne({
-            _id: id,
-            customer: req.user._id
-        })
+        const booking = await Booking.findById(id)
         .populate('quotedPrice.quotedBy', 'firstName lastName email')
         .select('bookingNumber quotedPrice pricingStatus customerResponse');
 
@@ -1725,6 +1784,13 @@ exports.getMyBookingQuote = async (req, res) => {
             return res.status(404).json({ 
                 success: false, 
                 message: 'Booking not found' 
+            });
+        }
+
+        if (!canUserAccessBooking(booking, req.user)) {
+            return res.status(403).json({ 
+                success: false, 
+                message: 'Access denied' 
             });
         }
 
@@ -1764,19 +1830,20 @@ exports.getMyBookingQuote = async (req, res) => {
 exports.getMyBookingsSummary = async (req, res) => {
     try {
         const userId = req.user._id;
+        const visibilityQuery = buildMyBookingVisibilityQuery(req.user);
 
-        const recentBookings = await Booking.find({ customer: userId })
+        const recentBookings = await Booking.find(visibilityQuery)
             .sort('-createdAt')
             .limit(5)
             .select('bookingNumber status createdAt shipmentDetails.totalPackages sender receiver');
 
         const statusCounts = await Booking.aggregate([
-            { $match: { customer: userId } },
+            { $match: visibilityQuery },
             { $group: { _id: '$status', count: { $sum: 1 } } }
         ]);
 
         const pendingQuote = await Booking.findOne({
-            customer: userId,
+            ...visibilityQuery,
             pricingStatus: 'quoted',
             customerResponse: { $ne: 'accepted' }
         })
@@ -1784,7 +1851,7 @@ exports.getMyBookingsSummary = async (req, res) => {
         .select('bookingNumber quotedPrice');
 
         const activeShipment = await Booking.findOne({
-            customer: userId,
+            ...visibilityQuery,
             status: 'booking_confirmed',
             shipmentId: { $ne: null }
         })
