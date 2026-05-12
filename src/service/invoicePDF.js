@@ -56,7 +56,7 @@ const formatDate = (date) => {
 // PDF Component
 const InvoicePDF = ({ invoice, companyInfo }) => {
   const info = companyInfo || {
-    name: 'Samudera Traffic Co., Ltd.s Group',
+    name: 'Samudera Traffic Co., Ltd. Group',
     address: 'Green Tower, 9th floor, 3656/27-28
 Rama IV Road | Klongton-Klong Toey
 Bangkok 10110, Thailand',

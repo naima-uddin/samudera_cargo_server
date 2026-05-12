@@ -115,7 +115,7 @@ const getSenderEmailTemplate = (shipment) => {
                     <p>For any questions, please contact our support team.</p>
                 </div>
                 <div class="footer">
-                    <p>&copy; ${new Date().getFullYear()} Samudera Traffic Co., Ltd.s Group. All rights reserved.</p>
+                    <p>&copy; ${new Date().getFullYear()} Samudera Traffic Co., Ltd. Group. All rights reserved.</p>
                     <p>This is an automated message, please do not reply.</p>
                 </div>
             </div>
@@ -178,7 +178,7 @@ const getReceiverEmailTemplate = (shipment) => {
                     <p>For any questions about delivery, please contact our support team.</p>
                 </div>
                 <div class="footer">
-                    <p>&copy; ${new Date().getFullYear()} Samudera Traffic Co., Ltd.s Group. All rights reserved.</p>
+                    <p>&copy; ${new Date().getFullYear()} Samudera Traffic Co., Ltd. Group. All rights reserved.</p>
                 </div>
             </div>
         </body>
@@ -264,7 +264,7 @@ const getAdminEmailTemplate = (shipment) => {
                     
                 </div>
                 <div class="footer">
-                    <p>&copy; ${new Date().getFullYear()} Samudera Traffic Co., Ltd.s Group. All rights reserved.</p>
+                    <p>&copy; ${new Date().getFullYear()} Samudera Traffic Co., Ltd. Group. All rights reserved.</p>
                 </div>
             </div>
         </body>
@@ -299,7 +299,7 @@ const sendEmail = async (to, subject, html, attachments = [], options = {}) => {
         }
 
         const mailOptions = {
-            from: `"Samudera Traffic Co., Ltd.s" <${process.env.EMAIL_FROM || process.env.SMTP_USER}>`,
+            from: `"Samudera Traffic Co., Ltd." <${process.env.EMAIL_FROM || process.env.SMTP_USER}>`,
             to: recipients || undefined,
             cc: ccRecipients || undefined,
             bcc: bccRecipients || undefined,

@@ -323,7 +323,7 @@ const warehouseTemplates = {
                 </a>
             </p>
             
-            <p>Thank you for choosing Samudera Traffic Co., Ltd.s!</p>
+            <p>Thank you for choosing Samudera Traffic Co., Ltd.!</p>
         `
     }),
 
