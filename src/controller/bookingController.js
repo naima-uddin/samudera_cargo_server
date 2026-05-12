@@ -3252,11 +3252,16 @@ exports.trackByNumber = async (req, res) => {
                     return;
                 }
 
-                pushContainer(
-                    source.containerNumber || source.containerNo || source.container || source.number,
-                    source.sealNumber || source.sealNo || source.seal || source.sealNumber,
-                    source.blNumber || source.BLNumber || source.bl_number || source.bl || source.blNo
-                );
+                // Split compound comma-separated strings (e.g. consolidation.containerNumber = "A, B, C")
+                {
+                    const cNums = `${source.containerNumber || source.containerNo || source.container || source.number || ''}`.split(',').map(s => s.trim()).filter(Boolean);
+                    const sNums = `${source.sealNumber || source.sealNo || source.seal || ''}`.split(',').map(s => s.trim()).filter(Boolean);
+                    const bNums = `${source.blNumber || source.BLNumber || source.bl_number || source.bl || source.blNo || ''}`.split(',').map(s => s.trim()).filter(Boolean);
+                    const len = Math.max(cNums.length, sNums.length, 1);
+                    for (let i = 0; i < len; i++) {
+                        pushContainer(cNums[i] || '', sNums[i] || sNums[0] || '', bNums[i] || bNums[0] || '');
+                    }
+                }
             };
 
             sources.forEach(addSource);
