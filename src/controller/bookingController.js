@@ -2741,6 +2741,7 @@ exports.trackByNumber = async (req, res) => {
       trackingNumber: b.trackingNumber,
       bookingNumber: b.bookingNumber,
       status: b.status,
+            containerInfo: b.containerInfo || null,
       shipmentDetails: b.shipmentDetails,
       packages: b.packageDetails || b.shipmentDetails?.packageDetails || [],
       sender: b.sender,
@@ -2840,7 +2841,15 @@ exports.trackByNumber = async (req, res) => {
       // ---- Search by container number ----
       console.log('🔍 Searching by container number:', trackingNumber);
       const cnReg = new RegExp(`^${trackingNumber}$`, 'i');
-      const cnQ = { $or: [{ 'containers.containerNumber': cnReg }, { containerNumber: cnReg }] };
+            const cnQ = {
+                $or: [
+                    { 'containers.containerNumber': cnReg },
+                    { 'containerInfo.containerNumber': cnReg },
+                    { 'shipmentDetails.containerNumber': cnReg },
+                    { 'shipmentDetails.containers.containerNumber': cnReg },
+                    { containerNumber: cnReg }
+                ]
+            };
 
       console.log('  Checking NewShipment...');
       const cnF1 = await NewShipment.findOne(cnQ)
@@ -2856,6 +2865,47 @@ exports.trackByNumber = async (req, res) => {
           .populate('consolidationId', 'timeline consolidationNumber originWarehouse destinationPort').lean();
         if (cnF2) { source = 'shipment'; shipmentData = cnF2; console.log('✅ Found in Shipment by containerNumber'); }
       }
+            if (!shipmentData) {
+                console.log('  Checking Booking...');
+                const cnBk = await Booking.findOne({ 'containerInfo.containerNumber': cnReg }).lean();
+                if (cnBk) {
+                    console.log('✅ Found in Booking by containerNumber');
+                    if (cnBk.trackingNumber) {
+                        console.log('  Following link to NewShipment via trackingNumber:', cnBk.trackingNumber);
+                        const linked = await NewShipment.findOne({
+                            trackingNumber: { $regex: new RegExp(`^${cnBk.trackingNumber}$`, 'i') }
+                        })
+                            .populate('customerId', 'firstName lastName companyName email phone')
+                            .populate('createdBy', 'firstName lastName email').lean();
+                        if (linked) {
+                            source = 'new_shipment';
+                            shipmentData = linked;
+                            console.log('✅ Found full NewShipment via Booking.trackingNumber:', cnBk.trackingNumber);
+                        }
+
+                        if (!shipmentData) {
+                            console.log('  Following link to old Shipment via trackingNumber:', cnBk.trackingNumber);
+                            const linkedOld = await Shipment.findOne({
+                                trackingNumber: { $regex: new RegExp(`^${cnBk.trackingNumber}$`, 'i') }
+                            })
+                                .populate('customerId', 'firstName lastName companyName email')
+                                .populate('bookingId', 'bookingNumber sender receiver dates')
+                                .populate('consolidationId', 'timeline consolidationNumber originWarehouse destinationPort').lean();
+                            if (linkedOld) {
+                                source = 'shipment';
+                                shipmentData = linkedOld;
+                                console.log('✅ Found Shipment via Booking.trackingNumber');
+                            }
+                        }
+                    }
+
+                    if (!shipmentData) {
+                        source = 'booking';
+                        shipmentData = buildBookingData(cnBk);
+                        console.log('✅ Using Booking data directly (containerNumber search)');
+                    }
+                }
+            }
       if (!shipmentData) {
         console.log('  Checking ManualShipment...');
         const cnMn = await ManualShipment.findOne(cnQ).lean();
@@ -3090,6 +3140,8 @@ exports.trackByNumber = async (req, res) => {
     const shipmentContainers = normalizeContainerEntries(
         shipmentData.containers,
         shipmentData.shipmentDetails?.containers,
+        shipmentData.containerInfo,
+        shipmentData.shipmentDetails?.containerInfo,
         shipmentData.containerNumber || shipmentData.sealNumber
             ? {
                 containerNumber: shipmentData.containerNumber,
