@@ -63,7 +63,7 @@ async function generateInvoicePDFBuffer(invoice, companyInfo, trackingNumber) {
             doc.fillColor('white')
                .fontSize(23)
                .font('Helvetica-Bold')
-               .text(companyInfo?.name || 'Samudera Traffic Co., Ltd.s', 50, 28);
+               .text(companyInfo?.name || 'Samudera Traffic Co., Ltd.', 50, 28);
             
             doc.fontSize(9)
                .font('Helvetica')

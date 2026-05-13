@@ -71,7 +71,7 @@ const generateInvoicePDF = async (shipment) => {
                 layout: 'portrait',
                 info: {
                     Title: `Invoice ${invoiceNumber}`,
-                    Author: 'Samudera Traffic Co., Ltd.s Group'
+                    Author: 'Samudera Traffic Co., Ltd. Group'
                 }
             });
             
@@ -99,7 +99,7 @@ const generateInvoicePDF = async (shipment) => {
                 .fontSize(6.5)
                 .font('Helvetica');
             
-            doc.text('Samudera Traffic Co., Ltd.s Group', 380, yPosition + 2, { align: 'right', width: 155 });
+            doc.text('Samudera Traffic Co., Ltd. Group', 380, yPosition + 2, { align: 'right', width: 155 });
             doc.text('Green Tower, 9th floor, 3656/27-28
 Rama IV Road, Klongton-Klong Toey
 Bangkok 10110, Thailand', 380, yPosition + 10, { align: 'right', width: 155 });

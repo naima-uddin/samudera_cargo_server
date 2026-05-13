@@ -351,7 +351,7 @@ exports.createBooking = async (req, res) => {
             receiver: receiver || {},
             
             courier: courier || {
-                company: 'Samudera Traffic Co., Ltd.s Group',
+                company: 'Samudera Traffic Co., Ltd. Group',
                 serviceType: serviceType || 'standard'
             },
             
@@ -406,7 +406,7 @@ exports.createBooking = async (req, res) => {
         if (customerRecipients.length > 0) {
             await sendTemplateEmailPerRecipient({
                 recipients: customerRecipients,
-                subject: '✅ Booking Request Received - Samudera Traffic Co., Ltd.s',
+                subject: '✅ Booking Request Received - Samudera Traffic Co., Ltd.',
                 template: 'booking-received',
                 data: {
                     bookingNumber: booking.bookingNumber,
@@ -916,7 +916,7 @@ exports.acceptQuote = async (req, res) => {
                 },
                 
                 courier: {
-                    company: booking.courier?.company || 'Samudera Traffic Co., Ltd.s Group',
+                    company: booking.courier?.company || 'Samudera Traffic Co., Ltd. Group',
                     serviceType: booking.courier?.serviceType || booking.serviceType || 'standard'
                 },
                 
@@ -1100,7 +1100,7 @@ try {
         
         
         const companyInfo = {
-            name: 'Samudera Traffic Co., Ltd.s Group',
+            name: 'Samudera Traffic Co., Ltd. Group',
             address: 'Green Tower, 9th floor, 3656/27-28 Rama IV Road',
             city: 'Klongton-Klong Toey Bangkok 10110, Thailand',
             phone: '+66977830395',
@@ -1133,7 +1133,7 @@ if (!pdfBuffer && invoice) {
     try {
         console.log('   🔁 Retrying PDF generation before sending emails...');
         const fallbackCompanyInfo = {
-            name: 'Samudera Traffic Co., Ltd.s Group',
+            name: 'Samudera Traffic Co., Ltd. Group',
             address: 'Green Tower, 9th floor, 3656/27-28Rama IV Road',
             city: 'Klongton-Klong Toey Bangkok 10110, Thailand',
             phone: '+66977830395',
@@ -1163,7 +1163,7 @@ if (pdfBuffer && invoice) {
 const { allRecipients: customerRecipients } = getBookingPartyRecipients(booking, req.user?.email);
 if (customerRecipients.length > 0) {
     const emailData = {
-        subject: '🎉 Booking Confirmed! - Samudera Traffic Co., Ltd.s',
+        subject: '🎉 Booking Confirmed! - Samudera Traffic Co., Ltd.',
         template: 'booking-confirmed-customer',
         data: {
             customerName: booking.sender?.name || 'Customer',
@@ -1201,7 +1201,7 @@ if (customerRecipients.length > 0) {
             try {
                 await sendEmail({
                     to: booking.receiver.email,
-                    subject: '📦 Your Shipment is Confirmed - Samudera Traffic Co., Ltd.s',
+                    subject: '📦 Your Shipment is Confirmed - Samudera Traffic Co., Ltd.',
                     template: 'receiver-shipment-confirmed',
                     data: {
                         receiverName: booking.receiver.name || 'Valued Customer',
@@ -2376,7 +2376,7 @@ exports.sendInvoiceEmail = async (req, res) => {
         // Send email
         await sendEmail({
             to: recipientEmail,
-            subject: `🧾 Invoice ${invoice.invoiceNumber} from Samudera Traffic Co., Ltd.s`,
+            subject: `🧾 Invoice ${invoice.invoiceNumber} from Samudera Traffic Co., Ltd.`,
             template: 'invoice-email',
             data: {
                 customerName: invoice.customerId?.firstName || 'Customer',
@@ -2387,7 +2387,7 @@ exports.sendInvoiceEmail = async (req, res) => {
                 // invoiceUrl: `${process.env.FRONTEND_URL}/invoices/${invoice._id}`,
                 pdfUrl: invoice.pdfUrl,
                 message: message || 'Please find your invoice attached.',
-                companyName: 'Samudera Traffic Co., Ltd.s'
+                companyName: 'Samudera Traffic Co., Ltd.'
             }
         });
 

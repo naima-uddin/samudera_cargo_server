@@ -369,8 +369,8 @@ const bookingSchema = new mongoose.Schema({
     courier: {
         company: {
             type: String,
-            enum: ['Samudera Traffic Co., Ltd.s Group', 'DHL', 'FedEx', 'UPS', 'USPS', 'Other'],
-            default: 'Samudera Traffic Co., Ltd.s Group'
+            enum: ['Samudera Traffic Co., Ltd. Group', 'DHL', 'FedEx', 'UPS', 'USPS', 'Other'],
+            default: 'Samudera Traffic Co., Ltd. Group'
         },
         serviceType: {
             type: String,

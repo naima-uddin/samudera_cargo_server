@@ -189,7 +189,7 @@ exports.createShipment = async (req, res) => {
                 vesselName: bookingData.transport?.vesselName || bookingData.shipmentDetails?.vesselName || bookingData.vesselName || '',
                 voyageNumber: bookingData.transport?.voyageNumber || bookingData.shipmentDetails?.voyageNumber || bookingData.voyageNumber || '',
                 flightNumber: bookingData.transport?.flightNumber || bookingData.shipmentDetails?.flightNumber || '',
-                carrierName: bookingData.transport?.carrierName || bookingData.courier?.company || 'Samudera Traffic Co., Ltd.s Group'
+                carrierName: bookingData.transport?.carrierName || bookingData.courier?.company || 'Samudera Traffic Co., Ltd. Group'
             },
             dates: {
                 estimatedDeparture: bookingData.dates?.estimatedDeparture,
@@ -213,7 +213,7 @@ exports.createShipment = async (req, res) => {
             sender: bookingData.sender,
             receiver: bookingData.receiver,
             courier: {
-                company: bookingData.courier?.company || 'Samudera Traffic Co., Ltd.s Group',
+                company: bookingData.courier?.company || 'Samudera Traffic Co., Ltd. Group',
                 serviceType: bookingData.serviceType
             },
             status: bookingData.status || 'booking_requested',

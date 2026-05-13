@@ -180,7 +180,7 @@ app.get('/', (req, res) => {
     timestamp: new Date().toISOString(),
     server: 'running',
     database: mongoose && mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
-    message: 'Welcome to the Samudera Cargo Samudera Traffic Co., Ltd.s API. Please refer to /api/v1 for available endpoints. Server running on the port {Process.env.PORT || 8000}'
+    message: 'Welcome to the Samudera Cargo Samudera Traffic Co., Ltd. API. Please refer to /api/v1 for available endpoints. Server running on the port {Process.env.PORT || 8000}'
   });
 });
 

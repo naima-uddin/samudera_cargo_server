@@ -1775,7 +1775,7 @@ exports.createShipment = async (req, res) => {
       
       // Courier info
       courier: {
-        company: courier?.company || 'Samudera Traffic Co., Ltd.s Group',
+        company: courier?.company || 'Samudera Traffic Co., Ltd. Group',
         serviceType: serviceType || courier?.serviceType || 'standard'
       },
       
