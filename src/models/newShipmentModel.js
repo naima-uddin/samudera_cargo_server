@@ -588,6 +588,8 @@ newShipmentSchema.index({ 'sender.email': 1 });
 newShipmentSchema.index({ 'receiver.email': 1 });
 newShipmentSchema.index({ customerId: 1 });
 newShipmentSchema.index({ 'returnRequest.status': 1 }); // Return status এর জন্য index
+newShipmentSchema.index({ 'containers.containerNumber': 1 }); // Container number search
+newShipmentSchema.index({ bookingNumber: 1 }); // Booking number search
 
 // ========== VIRTUAL FIELDS ==========
 newShipmentSchema.virtual('isDelivered').get(function() {

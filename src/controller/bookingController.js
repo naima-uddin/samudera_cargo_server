@@ -2694,6 +2694,11 @@ const calculateTotals = (charges, taxRate, discountAmount) => {
 // ========== 14. TRACK BY NUMBER (Public) ==========
 // Supports searching by tracking_number, bl_number, booking_number, container_number
 
+// Helper function to escape special regex characters
+const escapeRegexChars = (str) => {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+};
+
 exports.trackByNumber = async (req, res) => {
   try {
     let { trackingNumber } = req.params;
@@ -2755,31 +2760,56 @@ exports.trackByNumber = async (req, res) => {
     if (type === 'booking_number') {
       // ---- Search by bookingNumber field ----
       console.log('🔍 Searching by booking number:', trackingNumber);
-      const bkReg = new RegExp(`^${trackingNumber}$`, 'i');
+      const escapedTrackingNumber = escapeRegexChars(trackingNumber);
+      const bkReg = new RegExp(`^${escapedTrackingNumber}$`, 'i');
+      const normalizedBkNumber = trackingNumber.trim().toUpperCase();
 
       // Check ManualShipment by bookingNumber (separate queries to avoid sparse index $or issues)
       if (!shipmentData) {
         console.log('  Checking ManualShipment by bookingNumber...');
-        const bkMnByBk = await ManualShipment.findOne({ bookingNumber: bkReg }).lean();
+        const bkMnByBk = await ManualShipment.findOne({ 
+          $or: [
+            { bookingNumber: bkReg },
+            { bookingNumber: trackingNumber },
+            { bookingNumber: trackingNumber.toLowerCase() },
+            { bookingNumber: trackingNumber.toUpperCase() },
+            { bookingNumber: trackingNumber.trim() }
+          ]
+        }).lean();
         if (bkMnByBk) { source = 'manual'; shipmentData = buildManualData(bkMnByBk); console.log('✅ Found in ManualShipment by bookingNumber'); }
       }
       if (!shipmentData) {
         console.log('  Checking ManualShipment by shipmentNumber...');
-        const bkMnBySh = await ManualShipment.findOne({ shipmentNumber: bkReg }).lean();
+        const bkMnBySh = await ManualShipment.findOne({ 
+          $or: [
+            { shipmentNumber: bkReg },
+            { shipmentNumber: trackingNumber },
+            { shipmentNumber: trackingNumber.toUpperCase() },
+            { shipmentNumber: trackingNumber.trim() }
+          ]
+        }).lean();
         if (bkMnBySh) { source = 'manual'; shipmentData = buildManualData(bkMnBySh); console.log('✅ Found in ManualShipment by shipmentNumber'); }
       }
 
       // Search Booking model and then follow link to NewShipment for full timeline
       if (!shipmentData) {
         console.log('  Checking Booking...');
-        const bk = await Booking.findOne({ bookingNumber: bkReg }).lean();
+        const bk = await Booking.findOne({ 
+          $or: [
+            { bookingNumber: bkReg },
+            { bookingNumber: trackingNumber },
+            { bookingNumber: trackingNumber.toUpperCase() },
+            { bookingNumber: trackingNumber.trim() }
+          ]
+        }).lean();
         if (bk) {
           console.log('✅ Found in Booking by bookingNumber');
           // Follow the link: Booking.trackingNumber → NewShipment.trackingNumber
           if (bk.trackingNumber) {
             console.log('  Following link to NewShipment via trackingNumber:', bk.trackingNumber);
+            const escapedBkTrackingNumber = escapeRegexChars(bk.trackingNumber);
             const linked = await NewShipment.findOne({
-              trackingNumber: { $regex: new RegExp(`^${bk.trackingNumber}$`, 'i') }
+              trackingNumber: { $regex: new RegExp(`^${escapedBkTrackingNumber}$`, 'i') }
             })
             .populate('customerId', 'firstName lastName companyName email phone')
             .populate('createdBy', 'firstName lastName email').lean();
@@ -2792,8 +2822,9 @@ exports.trackByNumber = async (req, res) => {
           // Also try Shipment model
           if (!shipmentData && bk.trackingNumber) {
             console.log('  Following link to old Shipment via trackingNumber:', bk.trackingNumber);
+            const escapedBkTrackingNumber = escapeRegexChars(bk.trackingNumber);
             const linkedOld = await Shipment.findOne({
-              trackingNumber: { $regex: new RegExp(`^${bk.trackingNumber}$`, 'i') }
+              trackingNumber: { $regex: new RegExp(`^${escapedBkTrackingNumber}$`, 'i') }
             })
             .populate('customerId', 'firstName lastName companyName email')
             .populate('bookingId', 'bookingNumber sender receiver dates')
@@ -2812,7 +2843,14 @@ exports.trackByNumber = async (req, res) => {
       // Try searching NewShipment's shipmentNumber field (SHP-YYMM-NNNNN)
       if (!shipmentData) {
         console.log('  Checking NewShipment by shipmentNumber...');
-        const bkF1 = await NewShipment.findOne({ shipmentNumber: bkReg })
+        const bkF1 = await NewShipment.findOne({ 
+          $or: [
+            { shipmentNumber: bkReg },
+            { shipmentNumber: trackingNumber },
+            { shipmentNumber: trackingNumber.toUpperCase() },
+            { shipmentNumber: trackingNumber.trim() }
+          ]
+        })
           .populate('customerId', 'firstName lastName companyName email phone')
           .populate('createdBy', 'firstName lastName email').lean();
         if (bkF1) { source = 'new_shipment'; shipmentData = bkF1; console.log('✅ Found in NewShipment by shipmentNumber'); }
@@ -2821,7 +2859,14 @@ exports.trackByNumber = async (req, res) => {
       // Try searching NewShipment's bookingNumber field (admin-set or auto-generated)
       if (!shipmentData) {
         console.log('  Checking NewShipment by bookingNumber...');
-        const bkF2 = await NewShipment.findOne({ bookingNumber: bkReg })
+        const bkF2 = await NewShipment.findOne({ 
+          $or: [
+            { bookingNumber: bkReg },
+            { bookingNumber: trackingNumber },
+            { bookingNumber: trackingNumber.toUpperCase() },
+            { bookingNumber: trackingNumber.trim() }
+          ]
+        })
           .populate('customerId', 'firstName lastName companyName email phone')
           .populate('createdBy', 'firstName lastName email').lean();
         if (bkF2) { source = 'new_shipment'; shipmentData = bkF2; console.log('✅ Found in NewShipment by bookingNumber'); }
@@ -2830,7 +2875,14 @@ exports.trackByNumber = async (req, res) => {
       // Try old Shipment model
       if (!shipmentData) {
         console.log('  Checking old Shipment...');
-        const bkOs = await Shipment.findOne({ bookingNumber: bkReg })
+        const bkOs = await Shipment.findOne({ 
+          $or: [
+            { bookingNumber: bkReg },
+            { bookingNumber: trackingNumber },
+            { bookingNumber: trackingNumber.toUpperCase() },
+            { bookingNumber: trackingNumber.trim() }
+          ]
+        })
           .populate('customerId', 'firstName lastName companyName email')
           .populate('bookingId', 'bookingNumber sender receiver dates')
           .populate('consolidationId', 'timeline consolidationNumber originWarehouse destinationPort').lean();
@@ -2840,22 +2892,80 @@ exports.trackByNumber = async (req, res) => {
     } else if (type === 'container_number') {
       // ---- Search by container number ----
       console.log('🔍 Searching by container number:', trackingNumber);
-      const cnReg = new RegExp(`^${trackingNumber}$`, 'i');
-            const cnQ = {
-                $or: [
-                    { 'containers.containerNumber': cnReg },
-                    { 'containerInfo.containerNumber': cnReg },
-                    { 'shipmentDetails.containerNumber': cnReg },
-                    { 'shipmentDetails.containers.containerNumber': cnReg },
-                    { containerNumber: cnReg }
-                ]
-            };
+      const escapedTrackingNumber = escapeRegexChars(trackingNumber);
+      const cnReg = new RegExp(`^${escapedTrackingNumber}$`, 'i');
+      const partialCnReg = new RegExp(escapedTrackingNumber, 'i'); // Partial match fallback
+      
+      console.log('  Query regex:', cnReg);
+      console.log('  Escaped search value:', escapedTrackingNumber);
+      
+      // Build comprehensive query with multiple strategies
+      const cnQ = {
+        $or: [
+          // Direct exact matches (case-insensitive) - most precise
+          { 'containers.containerNumber': trackingNumber },
+          { 'containers.containerNumber': trackingNumber.toLowerCase() },
+          { 'containers.containerNumber': trackingNumber.toUpperCase() },
+          { 'containers.containerNumber': trackingNumber.trim() },
+          // Regex exact matches (entire string)
+          { 'containers.containerNumber': cnReg },
+          { 'containerInfo.containerNumber': cnReg },
+          { 'shipmentDetails.containerNumber': cnReg },
+          { 'shipmentDetails.containers.containerNumber': cnReg },
+          { containerNumber: cnReg },
+          // Partial regex matches (fallback)
+          { 'containers.containerNumber': partialCnReg }
+        ]
+      };
 
-      console.log('  Checking NewShipment...');
+      console.log('  Checking NewShipment for container:', trackingNumber);
+      
       const cnF1 = await NewShipment.findOne(cnQ)
         .populate('customerId', 'firstName lastName companyName email phone')
         .populate('createdBy', 'firstName lastName email').lean();
-      if (cnF1) { source = 'new_shipment'; shipmentData = cnF1; console.log('✅ Found in NewShipment by containerNumber'); }
+      
+      if (cnF1) { 
+        source = 'new_shipment'; 
+        shipmentData = cnF1; 
+        console.log('✅ Found in NewShipment by containerNumber'); 
+        console.log('📦 Container data:', JSON.stringify(cnF1.containers, null, 2));
+      } else {
+        console.log('❌ Not found in NewShipment with OR query');
+        // Debug: Check what we actually have in the database
+        const sampleRecords = await NewShipment.find({}).select('trackingNumber containers').limit(5).lean();
+        console.log('📊 Sample NewShipment records:', JSON.stringify(sampleRecords, null, 2));
+        
+        // Try a direct aggregation to find any matching containers
+        const aggregationResult = await NewShipment.aggregate([
+          {
+            $match: {
+              $expr: {
+                $anyElementTrue: {
+                  $map: {
+                    input: '$containers',
+                    as: 'container',
+                    in: {
+                      $regexMatch: {
+                        input: '$$container.containerNumber',
+                        regex: escapedTrackingNumber,
+                        options: 'i'
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        ]).limit(1);
+        
+        if (aggregationResult && aggregationResult.length > 0) {
+          console.log('✅ Found via aggregation pipeline!');
+          shipmentData = aggregationResult[0];
+          source = 'new_shipment';
+        } else {
+          console.log('❌ Not found even via aggregation');
+        }
+      }
 
       if (!shipmentData) {
         console.log('  Checking old Shipment...');
@@ -2865,15 +2975,17 @@ exports.trackByNumber = async (req, res) => {
           .populate('consolidationId', 'timeline consolidationNumber originWarehouse destinationPort').lean();
         if (cnF2) { source = 'shipment'; shipmentData = cnF2; console.log('✅ Found in Shipment by containerNumber'); }
       }
-            if (!shipmentData) {
+
+      if (!shipmentData) {
                 console.log('  Checking Booking...');
                 const cnBk = await Booking.findOne({ 'containerInfo.containerNumber': cnReg }).lean();
                 if (cnBk) {
                     console.log('✅ Found in Booking by containerNumber');
                     if (cnBk.trackingNumber) {
                         console.log('  Following link to NewShipment via trackingNumber:', cnBk.trackingNumber);
+                        const escapedCnBkTrackingNumber = escapeRegexChars(cnBk.trackingNumber);
                         const linked = await NewShipment.findOne({
-                            trackingNumber: { $regex: new RegExp(`^${cnBk.trackingNumber}$`, 'i') }
+                            trackingNumber: { $regex: new RegExp(`^${escapedCnBkTrackingNumber}$`, 'i') }
                         })
                             .populate('customerId', 'firstName lastName companyName email phone')
                             .populate('createdBy', 'firstName lastName email').lean();
@@ -2885,8 +2997,9 @@ exports.trackByNumber = async (req, res) => {
 
                         if (!shipmentData) {
                             console.log('  Following link to old Shipment via trackingNumber:', cnBk.trackingNumber);
+                            const escapedCnBkTrackingNumber2 = escapeRegexChars(cnBk.trackingNumber);
                             const linkedOld = await Shipment.findOne({
-                                trackingNumber: { $regex: new RegExp(`^${cnBk.trackingNumber}$`, 'i') }
+                                trackingNumber: { $regex: new RegExp(`^${escapedCnBkTrackingNumber2}$`, 'i') }
                             })
                                 .populate('customerId', 'firstName lastName companyName email')
                                 .populate('bookingId', 'bookingNumber sender receiver dates')
@@ -2909,8 +3022,60 @@ exports.trackByNumber = async (req, res) => {
       if (!shipmentData) {
         console.log('  Checking ManualShipment...');
         const cnMn = await ManualShipment.findOne(cnQ).lean();
-        if (cnMn) { source = 'manual'; shipmentData = buildManualData(cnMn); console.log('✅ Found in ManualShipment by containerNumber'); }
+        if (cnMn) { 
+          source = 'manual'; 
+          shipmentData = buildManualData(cnMn); 
+          console.log('✅ Found in ManualShipment by containerNumber');
+          console.log('📦 ManualShipment containers:', JSON.stringify(cnMn.containers, null, 2));
+        } else {
+          console.log('❌ Not found in ManualShipment');
+          // Debug: Check sample ManualShipment records
+          const manualSamples = await ManualShipment.find({}).select('trackingNumber containers').limit(3).lean();
+          console.log('📊 Sample ManualShipment records:', JSON.stringify(manualSamples, null, 2));
+        }
       }
+      
+      // FINAL FALLBACK: Direct JavaScript filter for containerNumber (handles all edge cases)
+      if (!shipmentData) {
+        console.log('  Final fallback: Using direct JavaScript filter...');
+        const normalizedSearch = trackingNumber.trim().toUpperCase();
+        
+        // Search NewShipment with direct filter
+        const allNewShipments = await NewShipment.find({}).select('trackingNumber containers').lean();
+        const matchedNS = allNewShipments.find(ns => 
+          ns.containers && ns.containers.some(c => 
+            c.containerNumber && c.containerNumber.trim().toUpperCase() === normalizedSearch
+          )
+        );
+        
+        if (matchedNS) {
+          console.log('✅ Found in NewShipment via direct filter');
+          const fullData = await NewShipment.findById(matchedNS._id)
+            .populate('customerId', 'firstName lastName companyName email phone')
+            .populate('createdBy', 'firstName lastName email').lean();
+          source = 'new_shipment';
+          shipmentData = fullData;
+        }
+      }
+      
+      // Final fallback for ManualShipment
+      if (!shipmentData) {
+        console.log('  Final fallback: Checking ManualShipment with direct filter...');
+        const normalizedSearch = trackingNumber.trim().toUpperCase();
+        const allManualShipments = await ManualShipment.find({}).select('trackingNumber containers').lean();
+        const matchedMS = allManualShipments.find(ms =>
+          ms.containers && ms.containers.some(c =>
+            c.containerNumber && c.containerNumber.trim().toUpperCase() === normalizedSearch
+          )
+        );
+        
+        if (matchedMS) {
+          console.log('✅ Found in ManualShipment via direct filter');
+          shipmentData = buildManualData(matchedMS);
+          source = 'manual';
+        }
+      }
+      
       // Fallback: search Consolidation (container numbers are stored there)
       if (!shipmentData) {
         console.log('  Checking Consolidation...');
@@ -2941,14 +3106,24 @@ exports.trackByNumber = async (req, res) => {
     } else if (type === 'bl_number') {
       // ---- Search by BL number ----
       console.log('🔍 Searching by BL number:', trackingNumber);
-      const blReg = new RegExp(`^${trackingNumber}$`, 'i');
+      const escapedTrackingNumber = escapeRegexChars(trackingNumber);
+      const blReg = new RegExp(`^${escapedTrackingNumber}$`, 'i');
+      const partialBlReg = new RegExp(escapedTrackingNumber, 'i');
       const blQ = { 
         $or: [
-          { 'containers.blNumber': blReg }, 
+          // Direct matches (exact)
+          { 'containers.blNumber': trackingNumber },
+          { 'containers.blNumber': trackingNumber.toUpperCase() },
+          { 'containers.blNumber': trackingNumber.toLowerCase() },
+          { 'containers.blNumber': trackingNumber.trim() },
+          // Regex exact matches
+          { 'containers.blNumber': blReg },
           { blNumber: blReg },
           { 'shipmentDetails.blNumber': blReg },
           { 'shipmentDetails.containers.blNumber': blReg },
-          { 'shipmentDetails.blNumbers': blReg }
+          { 'shipmentDetails.blNumbers': blReg },
+          // Partial regex fallback
+          { 'containers.blNumber': partialBlReg }
         ]
       };
 
@@ -2971,6 +3146,48 @@ exports.trackByNumber = async (req, res) => {
         const blMn = await ManualShipment.findOne(blQ).lean();
         if (blMn) { source = 'manual'; shipmentData = buildManualData(blMn); console.log('✅ Found in ManualShipment by blNumber'); }
       }
+      
+      // FINAL FALLBACK: Direct JavaScript filter for BL number
+      if (!shipmentData) {
+        console.log('  Final fallback: Using direct JavaScript filter for BL number...');
+        const normalizedBL = trackingNumber.trim().toUpperCase();
+        
+        // Search NewShipment with direct filter
+        const allNewShipments = await NewShipment.find({}).select('trackingNumber containers').lean();
+        const matchedNSBL = allNewShipments.find(ns =>
+          ns.containers && ns.containers.some(c =>
+            c.blNumber && c.blNumber.trim().toUpperCase() === normalizedBL
+          )
+        );
+        
+        if (matchedNSBL) {
+          console.log('✅ Found in NewShipment via direct BL filter');
+          const fullData = await NewShipment.findById(matchedNSBL._id)
+            .populate('customerId', 'firstName lastName companyName email phone')
+            .populate('createdBy', 'firstName lastName email').lean();
+          source = 'new_shipment';
+          shipmentData = fullData;
+        }
+      }
+      
+      // Final fallback for ManualShipment
+      if (!shipmentData) {
+        console.log('  Final fallback: Checking ManualShipment with direct BL filter...');
+        const normalizedBL = trackingNumber.trim().toUpperCase();
+        const allManualShipments = await ManualShipment.find({}).select('trackingNumber containers').lean();
+        const matchedMSBL = allManualShipments.find(ms =>
+          ms.containers && ms.containers.some(c =>
+            c.blNumber && c.blNumber.trim().toUpperCase() === normalizedBL
+          )
+        );
+        
+        if (matchedMSBL) {
+          console.log('✅ Found in ManualShipment via direct BL filter');
+          shipmentData = buildManualData(matchedMSBL);
+          source = 'manual';
+        }
+      }
+      
       // Fallback: search Consolidation (BL numbers are stored there)
       if (!shipmentData) {
         console.log('  Checking Consolidation...');
@@ -3001,9 +3218,17 @@ exports.trackByNumber = async (req, res) => {
     } else {
       // ---- Default: search by tracking number ----
       console.log('🔍 Searching in NewShipment model...');
+      const escapedTrackingNumber = escapeRegexChars(trackingNumber);
+      const normalizedTrackingNumber = trackingNumber.trim().toUpperCase();
       
       let newShipment = await NewShipment.findOne({ 
-        trackingNumber: { $regex: new RegExp(`^${trackingNumber}$`, 'i') }
+        $or: [
+          { trackingNumber: { $regex: new RegExp(`^${escapedTrackingNumber}$`, 'i') } },
+          { trackingNumber: trackingNumber },
+          { trackingNumber: trackingNumber.toUpperCase() },
+          { trackingNumber: trackingNumber.toLowerCase() },
+          { trackingNumber: trackingNumber.trim() }
+        ]
       })
       .populate('customerId', 'firstName lastName companyName email phone')
       .populate('createdBy', 'firstName lastName email')
@@ -3018,7 +3243,12 @@ exports.trackByNumber = async (req, res) => {
       if (!shipmentData) {
         console.log('🔍 Searching in old Shipment model...');
         let oldShipment = await Shipment.findOne({ 
-          trackingNumber: { $regex: new RegExp(`^${trackingNumber}$`, 'i') }
+          $or: [
+            { trackingNumber: { $regex: new RegExp(`^${escapedTrackingNumber}$`, 'i') } },
+            { trackingNumber: trackingNumber },
+            { trackingNumber: trackingNumber.toUpperCase() },
+            { trackingNumber: trackingNumber.trim() }
+          ]
         })
         .populate('customerId', 'firstName lastName companyName email')
         .populate('bookingId', 'bookingNumber sender receiver dates')
@@ -3035,7 +3265,12 @@ exports.trackByNumber = async (req, res) => {
       if (!shipmentData) {
         console.log('🔍 Searching in Booking model...');
         const booking = await Booking.findOne({ 
-          trackingNumber: { $regex: new RegExp(`^${trackingNumber}$`, 'i') }
+          $or: [
+            { trackingNumber: { $regex: new RegExp(`^${escapedTrackingNumber}$`, 'i') } },
+            { trackingNumber: trackingNumber },
+            { trackingNumber: trackingNumber.toUpperCase() },
+            { trackingNumber: trackingNumber.trim() }
+          ]
         }).lean();
         
         if (booking) {
@@ -3048,13 +3283,53 @@ exports.trackByNumber = async (req, res) => {
       if (!shipmentData) {
         console.log('🔍 Searching in ManualShipment model...');
         const manualShipment = await ManualShipment.findOne({ 
-          trackingNumber: { $regex: new RegExp(`^${trackingNumber}$`, 'i') }
+          $or: [
+            { trackingNumber: { $regex: new RegExp(`^${escapedTrackingNumber}$`, 'i') } },
+            { trackingNumber: trackingNumber },
+            { trackingNumber: trackingNumber.toUpperCase() },
+            { trackingNumber: trackingNumber.trim() }
+          ]
         }).lean();
         
         if (manualShipment) {
           source = 'manual';
           shipmentData = buildManualData(manualShipment);
           console.log('✅ Found in ManualShipment model');
+        }
+      }
+      
+      // FINAL FALLBACK: Direct JavaScript filter for tracking number
+      if (!shipmentData) {
+        console.log('  Final fallback: Using direct JavaScript filter for tracking number...');
+        
+        // Search NewShipment with direct filter
+        const allNewShipments = await NewShipment.find({}).select('trackingNumber').lean();
+        const matchedNSTN = allNewShipments.find(ns =>
+          ns.trackingNumber && ns.trackingNumber.trim().toUpperCase() === normalizedTrackingNumber
+        );
+        
+        if (matchedNSTN) {
+          console.log('✅ Found in NewShipment via direct tracking filter');
+          const fullData = await NewShipment.findById(matchedNSTN._id)
+            .populate('customerId', 'firstName lastName companyName email phone')
+            .populate('createdBy', 'firstName lastName email').lean();
+          source = 'new_shipment';
+          shipmentData = fullData;
+        }
+      }
+      
+      // Final fallback for ManualShipment
+      if (!shipmentData) {
+        console.log('  Final fallback: Checking ManualShipment with direct tracking filter...');
+        const allManualShipments = await ManualShipment.find({}).select('trackingNumber').lean();
+        const matchedMSTN = allManualShipments.find(ms =>
+          ms.trackingNumber && ms.trackingNumber.trim().toUpperCase() === normalizedTrackingNumber
+        );
+        
+        if (matchedMSTN) {
+          console.log('✅ Found in ManualShipment via direct tracking filter');
+          shipmentData = buildManualData(matchedMSTN);
+          source = 'manual';
         }
       }
     }
