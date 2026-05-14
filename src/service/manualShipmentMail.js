@@ -38,8 +38,8 @@ const getFrontendUrl = () => {
 const getSenderEmailTemplate = (shipment) => {
     const frontendUrl = getFrontendUrl();
     const trackingLink = frontendUrl
-        ? `${frontendUrl}/tracking-number?tracking=${encodeURIComponent(shipment.trackingNumber || '')}`
-        : `/tracking-number?tracking=${encodeURIComponent(shipment.trackingNumber || '')}`;
+        ? `${frontendUrl}/tracking-number/${encodeURIComponent(shipment.trackingNumber || '')}`
+        : `/tracking-number/${encodeURIComponent(shipment.trackingNumber || '')}`;
     
     return `
         <!DOCTYPE html>

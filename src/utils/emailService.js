@@ -37,8 +37,8 @@ const getFrontendUrl = () => {
 
 const getTrackingUrl = (trackingNumber) => {
     const frontendUrl = getFrontendUrl();
-    const trackingQuery = encodeURIComponent(trackingNumber || '');
-    return `${frontendUrl}/tracking-number?tracking=${trackingQuery}`;
+    const trackingPath = encodeURIComponent(trackingNumber || '');
+    return `${frontendUrl}/tracking-number/${trackingPath}`;
 };
 
 // Helper function to format currency
