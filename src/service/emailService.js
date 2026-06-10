@@ -22,10 +22,9 @@ class EmailService {
 
   detectMode() {
     // যদি সব config থাকে এবং development না হয়
-    if (process.env.SMTP_HOST && 
-        process.env.SMTP_USER && 
-        process.env.SMTP_PASS &&
-        process.env.NODE_ENV === 'production') {
+    if (process.env.SMTP_HOST &&
+        process.env.SMTP_USER &&
+        process.env.SMTP_PASS) {
       return 'production';
     }
     return 'development';
