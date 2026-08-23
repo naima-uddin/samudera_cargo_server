@@ -11,6 +11,7 @@ const consolidationController = require('../controller/consolidationController')
 const trackingController = require('../controller/trackingController');
 const damageReportController = require('../controller/damageController');
 const ManualInvoiceController = require('../controller/manualInvoiceController');
+const siteSettingsController = require('../controller/siteSettingsController');
 const { body } = require('express-validator');
 // ==================== PUBLIC ROUTES (No Authentication Needed) ==================== 
 router.get('/find-by-email', async (req, res) => {
@@ -486,4 +487,10 @@ router.patch('/receipts/:receiptId/consolidate', async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
+// ==================== SITE SETTINGS ====================
+// Public: any visitor's browser reads the site-wide logo/contact info.
+router.get('/site-settings', siteSettingsController.getSiteSettings);
+// Admin only: update logo/company/contact info from the dashboard.
+router.put('/site-settings', protect, adminOnly, siteSettingsController.updateSiteSettings);
+
 module.exports = router;
