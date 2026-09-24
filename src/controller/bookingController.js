@@ -8,7 +8,8 @@ const User = require('../models/userModel');
 const { sendEmail } = require('../utils/emailService');
 const { generateTrackingNumber } = require('../utils/trackingGenerator');
 const mongoose = require('mongoose');
-const { generateInvoicePDFBuffer } = require('../service/pdfGenerator'); 
+const { generateInvoicePDFBuffer } = require('../service/pdfGenerator');
+const { getCompanyInfo } = require('../utils/companyInfo');
 const NewShipment = require('../models/newShipmentModel');
 const ManualShipment = require('../models/manualModel');
 const TRACK_NOTIFICATION_EMAIL = 'tracking@samuderathai.com';
@@ -1099,15 +1100,10 @@ try {
     try {
         
         
-        const companyInfo = {
-            name: 'Samudera Traffic Co., Ltd. Group',
-            address: 'Green Tower, 9th floor, 3656/27-28 Rama IV Road',
-            city: 'Klongton-Klong Toey Bangkok 10110, Thailand',
-            phone: '+66977830395',
-            email: 'info@cargologistics.com',
-            website: 'www.cargologistics.com'
-        };
-        
+        // Pull live company identity/contact info from site settings so the
+        // invoice PDF always matches what the admin set in /settings.
+        const companyInfo = await getCompanyInfo();
+
         pdfBuffer = await generateInvoicePDFBuffer(invoice, companyInfo, trackingNumber);
         console.log('   ✅ PDF generated successfully, size:', pdfBuffer.length, 'bytes');
         
@@ -1132,14 +1128,7 @@ let emailAttachments = [];
 if (!pdfBuffer && invoice) {
     try {
         console.log('   🔁 Retrying PDF generation before sending emails...');
-        const fallbackCompanyInfo = {
-            name: 'Samudera Traffic Co., Ltd. Group',
-            address: 'Green Tower, 9th floor, 3656/27-28Rama IV Road',
-            city: 'Klongton-Klong Toey Bangkok 10110, Thailand',
-            phone: '+66977830395',
-            email: 'info@cargologistics.com',
-            website: 'www.cargologistics.com'
-        };
+        const fallbackCompanyInfo = await getCompanyInfo();
         pdfBuffer = await generateInvoicePDFBuffer(invoice, fallbackCompanyInfo, trackingNumber);
         console.log('   ✅ PDF regenerated successfully, size:', pdfBuffer.length, 'bytes');
     } catch (regenError) {
