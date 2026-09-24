@@ -43,12 +43,17 @@ exports.updateSiteSettings = async (req, res) => {
       }
     });
 
-    // Guard against oversized logo payloads (base64). ~3MB of base64 text.
-    if (updates.logo && updates.logo.length > 3 * 1024 * 1024) {
-      return res.status(413).json({
-        success: false,
-        message: "Logo is too large. Please upload an image under ~2MB.",
-      });
+    // Guard against oversized image payloads (base64). Allow images up to
+    // ~20MB; base64 inflates by ~33%, so cap the text length accordingly.
+    const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
+    const MAX_BASE64_LENGTH = Math.ceil(MAX_IMAGE_BYTES * 1.4);
+    for (const field of ["logo", "favicon"]) {
+      if (updates[field] && updates[field].length > MAX_BASE64_LENGTH) {
+        return res.status(413).json({
+          success: false,
+          message: `${field} is too large. Please upload an image under 20MB.`,
+        });
+      }
     }
 
     const settings = await SiteSettings.findOneAndUpdate(

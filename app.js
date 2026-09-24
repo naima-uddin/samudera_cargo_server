@@ -64,8 +64,10 @@ const corsOptions = {
   optionsSuccessStatus: 204,
 };
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Allow large base64 image payloads (logo/favicon). A 20MB image becomes
+// ~27MB of base64 text, so give ~30MB of headroom.
+app.use(express.json({ limit: "30mb" }));
+app.use(express.urlencoded({ extended: true, limit: "30mb" }));
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
 
