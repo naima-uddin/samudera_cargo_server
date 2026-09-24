@@ -61,15 +61,23 @@ async function generateInvoicePDFBuffer(invoice, companyInfo, trackingNumber) {
             doc.rect(0, 0, doc.page.width, 95).fill(colors.primary);
             
             doc.fillColor('white')
-               .fontSize(23)
+               .fontSize(20)
                .font('Helvetica-Bold')
-               .text(companyInfo?.name || 'Samudera Traffic Co., Ltd.', 50, 28);
-            
-            doc.fontSize(9)
+               .text(companyInfo?.name || 'Samudera Traffic Co., Ltd.', 50, 22, { width: 340 });
+
+            // Single combined address string from site settings (wraps within width).
+            const headerAddress = [companyInfo?.address, companyInfo?.city]
+               .filter(Boolean)
+               .join(', ');
+            const headerContact = [
+               companyInfo?.phone && `Phone: ${companyInfo.phone}`,
+               companyInfo?.email && `Email: ${companyInfo.email}`,
+            ].filter(Boolean).join('  |  ');
+
+            doc.fontSize(8.5)
                .font('Helvetica')
-               .text(companyInfo?.address || 'Green Tower, 9th floor, 3656/27-28 Rama IV Road', 50, 56)
-               .text(companyInfo?.city || 'Klongton-Klong Toey Bangkok 10110, Thailand', 50, 69)
-               .text(`Phone: ${companyInfo?.phone || '+66977830395'}`, 50, 82);
+               .text(headerAddress || 'Green Tower, 9th floor, 3656/27-28 Rama IV Road, Bangkok, Thailand', 50, 50, { width: 340 })
+               .text(headerContact || 'Phone: +66977830395', 50, 76, { width: 340 });
             
             doc.fillColor(colors.accent)
                .rect(doc.page.width - 175, 28, 125, 42)

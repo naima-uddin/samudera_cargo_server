@@ -1,6 +1,7 @@
 // utils/invoiceGenerator.js - SINGLE FILE FOR BOTH VERECL & RENDER
 const PDFDocument = require('pdfkit');
 const Invoice = require('../models/ManualInvoice');
+const { getCompanyInfo } = require('./companyInfo');
 
 // ========== ENVIRONMENT DETECTION ==========
 const isVercel = process.env.VERCEL === '1';
@@ -38,22 +39,29 @@ const formatDate = (date) => {
 };
 
 // ========== PDF GENERATION (Universal) ==========
-const generateInvoicePDF = async (invoice, shipment) => {
+const generateInvoicePDF = async (invoice, shipment, companyInfo = {}) => {
     return new Promise((resolve, reject) => {
         try {
             const filename = `${invoice.invoiceNumber}.pdf`;
             const doc = new PDFDocument({ margin: 50, size: 'A4' });
-            
+
             const chunks = [];
             doc.on('data', (chunk) => chunks.push(chunk));
-            
+
+            const company = {
+                name: companyInfo.name || 'Samudera Traffic Co., Ltd.',
+                address: companyInfo.address || 'Green Tower, 9th floor, 3656/27-28, Rama IV Road, Klongton-Klong Toey, Bangkok 10110, Thailand',
+                phone: companyInfo.phone || '+66977830395',
+                email: companyInfo.email || 'info@samuderathai.com',
+            };
+
             // ===== HEADER =====
             doc.rect(0, 0, doc.page.width, 120).fill('#1a1a2e');
             doc.fillColor('#ffffff');
-            doc.fontSize(24).font('Helvetica-Bold').text('Samudera Traffic Co., Ltd.S', 50, 40);
-            doc.fontSize(9).font('Helvetica').text('Global Shipping & Logistics Solutions', 50, 70);
-            doc.fontSize(8).text('Green Tower, 9th floor, 3656/27-28 ,Rama IV Road, Klongton-Klong Toey, Bangkok 10110, Thailand', 50, 90);
-            doc.text('Phone: +66977830395 | Email: info@samuderathai.com', 50, 105);
+            doc.fontSize(22).font('Helvetica-Bold').text(company.name, 50, 38, { width: 350 });
+            doc.fontSize(9).font('Helvetica').text('Global Shipping & Logistics Solutions', 50, 68);
+            doc.fontSize(8).text(company.address, 50, 88, { width: 360 });
+            doc.text(`Phone: ${company.phone} | Email: ${company.email}`, 50, 106, { width: 360 });
             
             doc.rect(doc.page.width - 180, 40, 130, 70).fill('#E67E22');
             doc.fillColor('#ffffff');
@@ -210,9 +218,9 @@ const generateInvoicePDF = async (invoice, shipment) => {
             doc.rect(0, footerY, doc.page.width, 65).fill('#1a1a2e');
             doc.fillColor('#ffffff');
             doc.fontSize(7).font('Helvetica');
-            doc.text('Thank you for choosing Samudera Traffic Co., Ltd. Group!', 50, footerY + 15, { align: 'center' });
+            doc.text(`Thank you for choosing ${company.name}!`, 50, footerY + 15, { align: 'center' });
             doc.text('This is a computer generated invoice. No signature required.', 50, footerY + 30, { align: 'center' });
-            doc.text(`© ${new Date().getFullYear()} Samudera Traffic Co., Ltd. Group. All rights reserved.`, 50, footerY + 45, { align: 'center' });
+            doc.text(`© ${new Date().getFullYear()} ${company.name}. All rights reserved.`, 50, footerY + 45, { align: 'center' });
             
             doc.end();
             
@@ -294,8 +302,10 @@ const generateInvoiceFromShipment = async (shipment) => {
         });
 
         console.log(`✅ Invoice created: ${invoiceNumber}`);
-        
-        const pdfInfo = await generateInvoicePDF(invoice, shipment);
+
+        // Live company identity/contact info from site settings.
+        const companyInfo = await getCompanyInfo();
+        const pdfInfo = await generateInvoicePDF(invoice, shipment, companyInfo);
         
         await Invoice.findByIdAndUpdate(invoice._id, {
             pdfFilename: pdfInfo.filename,
