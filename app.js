@@ -1,6 +1,7 @@
 // app.js - WITH GOOGLE AUTH SUPPORT
 require("dotenv").config();
 const express = require("express");
+const path = require("path");
 const cors = require("cors");
 const seedDefaultAdmin = require("./createDefaultAdminSeed");
 const route = require("./src/routes/api");
@@ -71,6 +72,18 @@ app.use(express.json({ limit: "30mb" }));
 app.use(express.urlencoded({ extended: true, limit: "30mb" }));
 app.use(cors(corsOptions));
 app.options("*", cors(corsOptions));
+
+// ===================== STATIC FILES (image uploads) =====================
+// Serves committed images from /public/uploads at e.g. /uploads/images/foo.jpg
+// On Vercel the /public folder is also served automatically as static assets.
+app.use(
+  "/uploads",
+  express.static(path.join(__dirname, "public", "uploads"), {
+    maxAge: "1y",
+    immutable: true,
+    fallthrough: true,
+  }),
+);
 
 // ===================== MIDDLEWARE =====================
 app.use((req, res, next) => {
