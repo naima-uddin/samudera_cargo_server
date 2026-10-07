@@ -375,6 +375,14 @@ const shipmentSchema = new mongoose.Schema({
         enum: shipmentStatuses,
         default: 'pending'
     },
+    // Warehouse workflow state (separate from the main transit `status`).
+    // Used by the consolidation queue to avoid re-adding/duplicating shipments.
+    // Was referenced across the consolidation controller but never defined here,
+    // so every `$set: { warehouseStatus }` was silently dropped by strict mode.
+    warehouseStatus: {
+        type: String,
+        enum: ['received', 'in_queue', 'consolidated'],
+    },
     currentMilestone: {
         type: String,
         enum: shipmentStatuses

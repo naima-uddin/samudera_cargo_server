@@ -10,10 +10,13 @@ const consolidationQueueSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    // Optional: shipments created without an associated customer (e.g. direct/
+    // manual shipments) must still be able to enter the consolidation queue.
+    // Forcing this made addToQueue fail for such shipments, so a received
+    // shipment never reached the Pending tab. Consumers read it null-safely.
     customerId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
+        ref: 'User'
     },
     
     // ===== গ্রুপিং কী (Shipment Classification + Origin + Destination) =====
