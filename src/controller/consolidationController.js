@@ -688,7 +688,7 @@ exports.createConsolidation = async (req, res) => {
         if (receiptIds && receiptIds.length > 0) {
             try {
                 // Dynamic import to avoid circular dependency
-                const WarehouseReceipt = require('../models/WarehouseReceipt');
+                const WarehouseReceipt = require('../models/warehouseReceiptModel');
                 
                 const updateResult = await WarehouseReceipt.updateMany(
                     { _id: { $in: receiptIds } },
@@ -722,7 +722,7 @@ exports.createConsolidation = async (req, res) => {
             
             if (extractedReceiptIds.length > 0) {
                 try {
-                    const WarehouseReceipt = require('../models/WarehouseReceipt');
+                    const WarehouseReceipt = require('../models/warehouseReceiptModel');
                     await WarehouseReceipt.updateMany(
                         { _id: { $in: extractedReceiptIds } },
                         { 
@@ -1216,10 +1216,11 @@ exports.updateConsolidationStatus = async (req, res) => {
     
     for (const shipment of consolidation.shipments) {
       if (!shipment) continue;
-      
+
+      const shipmentOldStatus = shipment.status;
       console.log(`  📦 Updating shipment: ${shipment.trackingNumber}`);
-      console.log(`     Old status: ${shipment.status} → New: ${shipmentNewStatus}`);
-      
+      console.log(`     Old status: ${shipmentOldStatus} → New: ${shipmentNewStatus}`);
+
       shipment.status = shipmentNewStatus;
       shipment.currentMilestone = shipmentNewStatus;
       shipment.updatedBy = req.user._id;
@@ -1291,7 +1292,7 @@ exports.updateConsolidationStatus = async (req, res) => {
       updatedShipments.push({
         id: shipment._id,
         trackingNumber: shipment.trackingNumber,
-        oldStatus: shipment.status,
+        oldStatus: shipmentOldStatus,
         newStatus: shipmentNewStatus
       });
       
