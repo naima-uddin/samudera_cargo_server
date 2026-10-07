@@ -216,9 +216,13 @@ exports.createShipment = async (req, res) => {
                 company: bookingData.courier?.company || 'Samudera Traffic Co., Ltd. Group',
                 serviceType: bookingData.serviceType
             },
-            status: bookingData.status || 'booking_requested',
+            // Keep `status` in sync with the chosen shipment status so the two
+            // fields never diverge (a manual shipment has no separate "booking
+            // phase"). Everything downstream reads `shipmentStatus` first, but
+            // this keeps `status` correct too.
+            status: bookingData.shipmentStatus || bookingData.status || 'booking_requested',
             initialShipmentStatus: bookingData.initialShipmentStatus || bookingData.shipmentStatus || bookingData.status || 'pending',
-            shipmentStatus: bookingData.shipmentStatus || 'pending',
+            shipmentStatus: bookingData.shipmentStatus || bookingData.status || 'pending',
             currentMilestone: timelineEntries[timelineEntries.length - 1]?.status,
             timeline: timelineEntries,
             createdBy: bookingData.createdBy,
