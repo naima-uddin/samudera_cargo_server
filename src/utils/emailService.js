@@ -2248,11 +2248,42 @@ const sendManualShippingStatusEmail = async (shipmentData) => {
         // Generate tracking URL
         const trackingUrl = trackingPageUrl || getTrackingUrl(trackingNumber);
 
+        // Customer-facing labels (match the tracking page) instead of the raw
+        // internal status vocabulary — e.g. "customs_clearance" -> "Customs
+        // Cleared", "in_transit" -> "In Transit (Sea Freight)".
+        const MANUAL_STATUS_LABELS = {
+            booking_requested: 'Booking',
+            pending: 'Pending',
+            received_at_warehouse: 'Received at Warehouse',
+            picked_up_from_warehouse: 'Picked up from Warehouse',
+            loaded_in_container: 'Loaded into Container',
+            loaded_into_container: 'Loaded into Container',
+            container_sealed: 'Container Sealed',
+            departed_port_of_origin: 'Departed Port of Origin',
+            in_transit: 'In Transit (Sea Freight)',
+            in_transit_sea_freight: 'In Transit (Sea Freight)',
+            arrived_at_destination_port: 'Arrived at Destination Port',
+            under_customs_cleared: 'Under Customs Clearance',
+            under_customs_clearance: 'Under Customs Clearance',
+            customs_clearance: 'Customs Cleared',
+            customs_cleared: 'Customs Cleared',
+            unloaded_from_vessel: 'Unloaded from Vessel',
+            out_for_delivery: 'Out for Delivery',
+            delivered: 'Delivered',
+            completed: 'Completed',
+            on_hold: 'On Hold',
+            cancelled: 'Cancelled',
+            returned: 'Returned'
+        };
+        const statusLabel =
+            MANUAL_STATUS_LABELS[status] ||
+            (status ? status.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()) : 'Updated');
+
         // Prepare email data
         const emailData = {
             shipmentNumber,
             trackingNumber,
-            status: status?.replace(/_/g, ' ').toUpperCase() || 'UPDATED',
+            status: statusLabel,
             location: location || 'In Transit',
             timestamp,
             description,

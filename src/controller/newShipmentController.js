@@ -1198,7 +1198,10 @@ exports.updateShipmentStatus = async (req, res) => {
             shipmentNumber: updatedShipment.shipmentNumber,
             trackingNumber: updatedShipment.trackingNumber,
             status: finalStatus,
-            location: notes || `Status updated to ${finalStatus.replace(/_/g, ' ')}`,
+            // Location = the admin's notes if they describe where it is; never a
+            // status sentence (that belongs in `description`/`status`). Empty ->
+            // the template shows a neutral default.
+            location: notes || '',
             timestamp: now,
             description: notes || `Shipment status has been updated to ${finalStatus.replace(/_/g, ' ')}`,
             senderName: updatedShipment.sender?.name || 'Sender',
