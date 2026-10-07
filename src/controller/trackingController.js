@@ -538,26 +538,44 @@ exports.updateTrackingStatus = async (req, res) => {
         }
 
         try {
-            const customerEmail = updatedDoc.customerId?.email || updatedDoc.customer?.email;
-            const customerName = updatedDoc.customerId?.firstName || 
-                                updatedDoc.customer?.firstName || 
+            // The shipment/booking is loaded without populate, so customerId is
+            // just an ObjectId (no .email). Notify the real parties on the record
+            // — sender + receiver — plus the customer email if it happens to be
+            // available. Without this, editing a status from the tracking page
+            // silently emailed no one.
+            const recipientEmails = [...new Set(
+                [
+                    updatedDoc.sender?.email,
+                    updatedDoc.receiver?.email,
+                    updatedDoc.customerId?.email,
+                    updatedDoc.customer?.email
+                ]
+                    .filter((e) => typeof e === 'string' && e.trim())
+                    .map((e) => e.trim().toLowerCase())
+            )];
+
+            const customerName = updatedDoc.sender?.name ||
+                                updatedDoc.customerId?.firstName ||
+                                updatedDoc.customer?.firstName ||
                                 'Customer';
 
-            if (customerEmail) {
+            const trackingEmailData = {
+                customerName,
+                trackingNumber: updatedDoc.trackingNumber,
+                oldStatus: previousStatus,
+                newStatus: status || updatedDoc.status,
+                location: location || currentLocation,
+                description: description || getStatusDescription(status || updatedDoc.status),
+                trackingUrl: `${(process.env.FRONTEND_URL || process.env.CLIENT_URL || process.env.NEXT_PUBLIC_FRONTEND_URL || '').replace(/\/$/, '')}/tracking-number?tracking=${encodeURIComponent(updatedDoc.trackingNumber)}`,
+                estimatedArrival: estimatedArrival || updatedDoc.estimatedArrival
+            };
+
+            for (const recipient of recipientEmails) {
                 await sendEmail({
-                    to: customerEmail,
+                    to: recipient,
                     subject: `🚚 Tracking Update: ${updatedDoc.trackingNumber}`,
                     template: 'tracking-update',
-                    data: {
-                        customerName,
-                        trackingNumber: updatedDoc.trackingNumber,
-                        oldStatus: previousStatus,
-                        newStatus: status || updatedDoc.status,
-                        location: location || currentLocation,
-                        description: description || getStatusDescription(status || updatedDoc.status),
-                        trackingUrl: `${(process.env.FRONTEND_URL || process.env.CLIENT_URL || process.env.NEXT_PUBLIC_FRONTEND_URL || '').replace(/\/$/, '')}/tracking-number?tracking=${encodeURIComponent(updatedDoc.trackingNumber)}`,
-                        estimatedArrival: estimatedArrival || updatedDoc.estimatedArrival
-                    }
+                    data: trackingEmailData
                 });
             }
         } catch (emailError) {
