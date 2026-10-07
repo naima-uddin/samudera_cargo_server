@@ -608,11 +608,11 @@ const templates = {
                         <p><strong>Origin:</strong> ${data.origin}</p>
                         <p><strong>Destination:</strong> ${data.destination}</p>
                         ${renderShipmentDetails(data, { title: 'Shipment Tracking Details' })}
-                        
+                        ${data.shipmentUrl ? `
                         <div style="text-align: center; margin: 30px 0;">
                             <a href="${data.shipmentUrl}" style="background: #17a2b8; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px;">Start Processing</a>
-                        </div>
-                        
+                        </div>` : ''}
+
                         <p>Please begin the pickup and consolidation process.</p>
                     </div>
                 </div>

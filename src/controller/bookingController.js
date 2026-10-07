@@ -697,6 +697,7 @@ exports.updatePriceQuote = async (req, res) => {
                         currency,
                         validUntil: booking.quotedPrice.validUntil,
                         breakdown: breakdown || {},
+                        notes,
                         isUpdate,
                         previousAmount
                     }
