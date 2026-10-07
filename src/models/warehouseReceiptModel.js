@@ -15,15 +15,18 @@ const warehouseReceiptSchema = new mongoose.Schema({
         ref: 'Shipment',
         required: true
     },
+    // Optional: direct/manual shipments can be received without an associated
+    // booking or customer. Shipment.bookingId and Shipment.customerId are both
+    // optional, so forcing them here made such shipments impossible to receive
+    // ("WarehouseReceipt validation failed: customerId is required"). All read
+    // sites use optional chaining, so a null value here is safe.
     bookingId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Booking',
-        required: true
+        ref: 'Booking'
     },
     customerId: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
+        ref: 'User'
     },
     warehouseId: {
         type: mongoose.Schema.Types.ObjectId,
