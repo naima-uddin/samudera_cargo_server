@@ -131,6 +131,14 @@ exports.getAllTrackings = async (req, res) => {
             bookingFilter.createdAt = dateFilter;
         }
 
+        // Once a booking is confirmed it gets its own Shipment (same tracking
+        // number). Showing both would list the same cargo twice in the tracking
+        // page — once as a "booking" row and once as a "shipment" row. So only
+        // include bookings that have NOT yet become a shipment; the shipment row
+        // carries the live status from there on. ({shipmentId: null} matches
+        // both an unset field and an explicit null in MongoDB.)
+        bookingFilter.shipmentId = null;
+
         // Get shipments with pagination
         const shipments = await Shipment.find(shipmentFilter)
             .populate('customerId', 'firstName lastName companyName email phone')
