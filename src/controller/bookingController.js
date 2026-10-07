@@ -3479,14 +3479,23 @@ exports.trackByNumber = async (req, res) => {
         return baseTimeline;
       }
 
+      // Dedup by TIMESTAMP only (not status+timestamp). Every consolidation
+      // status change already pushes a matching shipment milestone at the SAME
+      // timestamp, but with a different status vocabulary (shipment status vs
+      // consolidation status). Keying on status+timestamp failed to dedup those,
+      // so each update showed up twice and, after alias-mapping to different
+      // steps, made the journey look duplicated / out of order. Keying on the
+      // timestamp alone keeps the authoritative shipment milestone and drops the
+      // redundant consolidation copy, while still merging genuinely distinct
+      // consolidation-only events (unique timestamps).
       const existingKeys = new Set(
-        baseTimeline.map(event => `${event.status || ''}::${new Date(event.date || event.timestamp || event.createdAt || '').getTime()}`)
+        baseTimeline.map(event => new Date(event.date || event.timestamp || event.createdAt || '').getTime())
       );
 
       const merged = [...baseTimeline];
 
       for (const item of consolidation.timeline) {
-        const key = `${item.status || ''}::${new Date(item.timestamp || item.date || item.createdAt || '').getTime()}`;
+        const key = new Date(item.timestamp || item.date || item.createdAt || '').getTime();
         if (!existingKeys.has(key)) {
           merged.push({
             status: item.status,

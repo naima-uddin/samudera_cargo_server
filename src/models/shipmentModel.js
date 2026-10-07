@@ -445,7 +445,22 @@ const shipmentSchema = new mongoose.Schema({
     // ===== Cancellation =====
     cancelledAt: Date,
     cancellationReason: String,
-    
+    cancelledBy: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    },
+
+    // ===== Hold (individual shipment hold within a consolidation) =====
+    // Without these, hold metadata was silently dropped by strict mode and the
+    // pre-hold status was lost, so resuming reset the shipment back to "pending"
+    // instead of restoring where it actually was.
+    holdReason: String,
+    holdNotes: String,
+    heldAt: Date,
+    holdSource: String,
+    statusBeforeHold: String,
+    resumedAt: Date,
+
     // ===== Consolidation =====
     consolidationId: {
         type: mongoose.Schema.Types.ObjectId,

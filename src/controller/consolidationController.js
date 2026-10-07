@@ -2302,6 +2302,11 @@ exports.updateShipmentInConsolidation = async (req, res) => {
       case 'on_hold':
         updateData = {
           status: 'on_hold',
+          // Remember where the shipment was so resume can restore it (don't
+          // overwrite an existing snapshot if it's already on hold).
+          statusBeforeHold: previousStatus && previousStatus !== 'on_hold'
+            ? previousStatus
+            : (shipment.statusBeforeHold || 'pending'),
           holdReason: holdReason || 'Manual hold by admin',
           heldAt: new Date(),
           holdSource: 'consolidation',
@@ -2328,17 +2333,19 @@ exports.updateShipmentInConsolidation = async (req, res) => {
       case 'resume':  // ✅ in_progress এর পরিবর্তে resume
       case 'in_progress':
         if (previousStatus === 'on_hold') {
+          // Restore the status the shipment had before it was put on hold,
+          // instead of blindly resetting to "pending" (which lost progress).
+          const restoredStatus = shipment.statusBeforeHold || 'pending';
           updateData = {
-            status: 'pending',  // ✅ pending use করুন
-            // অথবা আপনার business logic অনুযায়ী অন্য status
+            status: restoredStatus,
             resumedAt: new Date(),
-            previousStatus: 'on_hold',
+            statusBeforeHold: null,
             holdReason: null,
             heldAt: null,
             holdSource: null,
             holdNotes: null
           };
-          milestoneDescription = `Shipment resumed from hold within consolidation ${consolidation.consolidationNumber}. ${notes || ''}`;
+          milestoneDescription = `Shipment resumed from hold within consolidation ${consolidation.consolidationNumber}. Status restored to ${restoredStatus.replace(/_/g, ' ')}. ${notes || ''}`;
           console.log('▶️ Shipment resumed:', shipment.trackingNumber);
         }
         break;
