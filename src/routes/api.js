@@ -12,6 +12,8 @@ const trackingController = require('../controller/trackingController');
 const damageReportController = require('../controller/damageController');
 const ManualInvoiceController = require('../controller/manualInvoiceController');
 const siteSettingsController = require('../controller/siteSettingsController');
+const User = require('../models/userModel');
+const WarehouseReceipt = require('../models/warehouseReceiptModel');
 const { body } = require('express-validator');
 // ==================== PUBLIC ROUTES (No Authentication Needed) ==================== 
 router.get('/find-by-email', async (req, res) => {
@@ -165,6 +167,12 @@ router.get(
     bookingController.getInvoiceByShipment
 );
 
+// Compatibility aliases used by the client and dashboard services.
+router.put('/invoices/:id', protect, adminOnly, bookingController.updateInvoice);
+router.put('/invoices/:id/mark-paid', protect, adminOnly, bookingController.markAsPaid);
+router.put('/invoices/bulk/update', protect, adminOnly, bookingController.bulkUpdateInvoices);
+router.get('/invoices/recent/list', protect, adminOnly, bookingController.getRecentInvoices);
+
 router.get(
     '/getInvoiceById/:id', 
     protect,  
@@ -226,7 +234,7 @@ router.delete('/deletemanualInvoice/:id', protect, adminOnly, ManualInvoiceContr
 router.post("/create-shipments", protect, newShipmentController.createShipment);
 router.get("/getNewShipment", protect,adminOnly, newShipmentController.getAllNewShipments);
 router.get('/getAllShipment',protect,  adminOnly, shipmentController.getAllShipments); 
-router.get('/shipments/track/:trackingNumber',protect, shipmentController.trackByNumber); 
+router.get('/shipments/track/:trackingNumber', shipmentController.trackByNumber); 
 
 // manual shipping
 // Customer shipment routes (protected) 
@@ -239,6 +247,16 @@ router.put('/updateShipmentStatus/:id',protect, adminOnly, newShipmentController
 router.put('/updateSenderReceiverInfo/:id', protect, adminOnly, newShipmentController.updateSenderReceiverInfo);
 router.get('/shipments/:id/invoice', protect, newShipmentController.getShipmentWithInvoice);
 router.post('/shipments/:id/regenerate-invoice', protect, newShipmentController.regenerateInvoice);
+
+router.get('/bookings/:id', protect, bookingController.getBookingById);
+router.get('/bookings/my-bookings/:id/timeline', protect, bookingController.getMyBookingTimeline);
+router.get('/bookings/my-bookings/:id/invoice', protect, bookingController.getMyBookingInvoice);
+router.get('/bookings/my-bookings/:id/quote', protect, bookingController.getMyBookingQuote);
+router.post('/bookings/:id/cancel', protect, bookingController.cancelBooking);
+router.put('/bookings/:id/delivery-status', protect, adminOnly, bookingController.updateDeliveryStatus);
+router.get('/bookings/:id/documents/:documentId/download', protect, bookingController.downloadBookingDocument);
+router.post('/bookings/:id/documents', protect, bookingController.addDocument);
+
 // ========== CUSTOMER ROUTES ==========
 router.get('/my-shipments',protect,  shipmentController.getMyShipments); 
 router.get('/my-shipments/:id',protect,  shipmentController.getMyShipmentById); 
@@ -247,6 +265,17 @@ router.get('/my-shipments/:id/timeline',protect,  shipmentController.getMyShipme
 
 router.put('/update-shipment-tracking/:id', protect, shipmentController.updateShipmentTrackingNumber);
 router.put('/new-update-shipment-tracking/:id', protect, newShipmentController.updateShipmentTrackingNumber);
+
+router.get('/shipments/:id', protect, shipmentController.getShipmentById);
+router.patch('/shipments/:id/status', protect, adminOnly, shipmentController.updateShipmentStatus);
+router.get('/shipments/:id/timeline', protect, shipmentController.getShipmentTimeline);
+router.post('/shipments/:id/tracking', protect, adminOnly, shipmentController.addTrackingUpdate);
+router.post('/shipments/:id/transport', protect, adminOnly, shipmentController.updateTransportDetails);
+router.post('/shipments/:id/documents', protect, adminOnly, shipmentController.addDocument);
+router.post('/shipments/:id/costs', protect, adminOnly, shipmentController.addCost);
+router.get('/shipments/:id/costs', protect, adminOnly, shipmentController.getShipmentCosts);
+router.put('/shipments/:id/costs/:costId', protect, adminOnly, shipmentController.updateCost);
+router.delete('/shipments/:id/costs/:costId', protect, adminOnly, shipmentController.deleteCost);
 // ========== COMMON ROUTES (Accessible by multiple roles) ==========
 router.get('/stats/dashboard', protect, shipmentController.getShipmentStatistics); 
 router.get('/my-shipment-by-id/:id',protect,  shipmentController.getShipmentById); 
