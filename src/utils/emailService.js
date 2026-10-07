@@ -1,6 +1,11 @@
 // utils/emailService.js
 const nodemailer = require('nodemailer');
 const path = require('path');
+const {
+    getFromAddress,
+    getReplyToAddress,
+    getSupportAddress
+} = require('../config/email');
 
 // Create transporter for Hostinger
 const transporter = nodemailer.createTransport({
@@ -1057,7 +1062,7 @@ const templates = {
                         
                         
                         
-                        <p>Need help? Contact us at <a href="mailto:info@samuderathai.com</a></p>
+                        <p>Need help? Contact us at <a href="mailto:${getSupportAddress()}">${getSupportAddress()}</a></p>
                     </div>
                 </div>
             </body>
@@ -1767,11 +1772,11 @@ const getAdminEmails = async () => {
         return [...new Set([
             ...admins.map(a => a.email).filter(Boolean),
             process.env.SMTP_USER,
-            'tracking@samuderathai.com'
+            process.env.TRACKING_EMAIL
         ])].filter(Boolean);
     } catch (err) {
         console.error('⚠️ Failed to fetch admin emails:', err.message);
-        return [process.env.SMTP_USER, 'tracking@samuderathai.com'].filter(Boolean);
+        return [process.env.SMTP_USER, process.env.TRACKING_EMAIL].filter(Boolean);
     }
 };
 
@@ -1795,9 +1800,9 @@ const sendEmail = async ({ to, subject, template, data, attachments }, retries =
         
         // Prepare email options with attachments support
         const mailOptions = {
-            from: `"${process.env.EMAIL_FROM_NAME || 'Samudera Cargo Logistics'}" <${process.env.EMAIL_FROM || 'tracking@samuderathai.com'}>`,
+            from: `"${process.env.EMAIL_FROM_NAME || 'Samudera Cargo Logistics'}" <${getFromAddress()}>`,
             to: Array.isArray(to) ? to.join(', ') : to,
-            replyTo: process.env.EMAIL_REPLY_TO || process.env.EMAIL_FROM,
+            replyTo: getReplyToAddress(),
             subject: emailContent.subject || subject,
             html: emailContent.html,
             attachments: attachments || []  // ✅ এই লাইনটি গুরুত্বপূর্ণ
@@ -1924,7 +1929,7 @@ const testEmailConnection = async () => {
                         totalCartons: 5,
                         totalWeight: 100,
                         dashboardUrl: process.env.FRONTEND_URL,
-                        supportEmail: process.env.SUPPORT_EMAIL || 'info@samuderathai.com'
+                        supportEmail: getSupportAddress()
                     }
                 });
 
@@ -1958,7 +1963,7 @@ const testEmailConnection = async () => {
                 requestedDate: new Date(),
                 bookingUrl: '#',
                 dashboardUrl: '#',
-                supportEmail: 'info@samuderathai.com',
+                supportEmail: getSupportAddress(),
                 quotedAmount: 1500,
                 currency: 'USD',
                 breakdown: {
@@ -2158,7 +2163,7 @@ const sendConsolidationStatusEmail = async (consolidationData) => {
 
         // Send to tracking email (tracking@samuderathai.com)
         try {
-            const trackingEmail = process.env.SMTP_USER || 'tracking@samuderathai.com';
+            const trackingEmail = process.env.TRACKING_EMAIL || process.env.SMTP_USER;
             results.tracking = await sendEmail({
                 to: trackingEmail,
                 template: 'consolidation-status-update',
@@ -2179,7 +2184,7 @@ const sendConsolidationStatusEmail = async (consolidationData) => {
         try {
             const adminEmails = await getAdminEmails();
             // trackingEmail was already sent above — skip duplicates
-            const trackingEmailSent = process.env.SMTP_USER || 'tracking@samuderathai.com';
+            const trackingEmailSent = process.env.TRACKING_EMAIL || process.env.SMTP_USER;
             const remainingAdmins = adminEmails.filter(e => e !== trackingEmailSent);
             results.admins = [];
             for (const adminEmail of remainingAdmins) {
