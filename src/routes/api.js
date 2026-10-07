@@ -74,6 +74,15 @@ router.get("/admin/getUsers/:userId", protect, adminOnly, userController.getUser
 router.put("/admin/updateUsers/:userId", protect, adminOnly, userController.updateUser);
 router.delete("/admin/users/:userId", protect, adminOnly, userController.deleteUser);
 
+// Legacy client aliases for user management.
+router.put('/users/change-password', protect, userController.changePassword);
+router.post('/users/staff', protect, adminOnly, userController.createStaff);
+router.get('/users', protect, adminOnly, userController.getAllUsers);
+router.get('/users/role/:role', protect, adminOnly, userController.getUsersByRole);
+router.get('/users/:userId', protect, adminOnly, userController.getUserById);
+router.put('/users/:userId', protect, adminOnly, userController.updateUser);
+router.delete('/users/:userId', protect, adminOnly, userController.deleteUser);
+
 // booking
 // Public tracking (no auth required)
 router.get('/track/:trackingNumber', bookingController.trackByNumber); 
@@ -172,6 +181,8 @@ router.put('/invoices/:id', protect, adminOnly, bookingController.updateInvoice)
 router.put('/invoices/:id/mark-paid', protect, adminOnly, bookingController.markAsPaid);
 router.put('/invoices/bulk/update', protect, adminOnly, bookingController.bulkUpdateInvoices);
 router.get('/invoices/recent/list', protect, adminOnly, bookingController.getRecentInvoices);
+router.get('/invoices/:id/download', protect, adminOnly, ManualInvoiceController.downloadInvoice);
+router.get('/invoices/:id', protect, adminOnly, ManualInvoiceController.getInvoiceById);
 
 router.get(
     '/getInvoiceById/:id', 
@@ -486,6 +497,9 @@ router.put('/tracking/bulk/update',protect,adminOnly, trackingController.bulkUpd
 // Delete routes
 router.delete('/tracking/:id',protect,adminOnly, trackingController.deleteTracking);
 router.post('/tracking/bulk/delete',protect,adminOnly, trackingController.bulkDeleteTrackings);
+router.post('/trackings/bulk/delete', protect, adminOnly, trackingController.bulkDeleteTrackings);
+router.put('/trackings/bulk/update', protect, adminOnly, trackingController.bulkUpdateTrackings);
+router.get('/getTrackingStats', protect, adminOnly, trackingController.getTrackingStats);
 
 // ============================================
 // ✅ DAMAGE REPORT ROUTES

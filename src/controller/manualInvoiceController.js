@@ -160,7 +160,7 @@ exports.getMyManualInvoices = async (req, res) => {
                 ...(emailRegex ? [{ 'customerInfo.email': emailRegex }] : [])
             ]
         };
-        
+
         if (filter.$or.length === 0) {
             filter.$or = [{ customerId: null }];
         }
@@ -208,6 +208,28 @@ exports.getMyManualInvoices = async (req, res) => {
         res.status(500).json({
             success: false,
             message: error.message || 'Failed to fetch your invoices'
+        });
+    }
+};
+
+exports.downloadInvoice = async (req, res) => {
+    try {
+        const invoice = await ManualInvoice.findById(req.params.id);
+
+        if (!invoice) {
+            return res.status(404).json({ success: false, message: 'Invoice not found' });
+        }
+
+        if (!invoice.pdfPath || !fs.existsSync(invoice.pdfPath)) {
+            return res.status(404).json({ success: false, message: 'Invoice PDF not found' });
+        }
+
+        return res.download(invoice.pdfPath, `${invoice.invoiceNumber || invoice._id}.pdf`);
+    } catch (error) {
+        console.error('Download manual invoice error:', error);
+        return res.status(500).json({
+            success: false,
+            message: error.message || 'Failed to download invoice'
         });
     }
 };
