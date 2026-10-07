@@ -387,6 +387,16 @@ exports.createBooking = async (req, res) => {
         // Populate customer info
         await booking.populate('customer', 'firstName lastName email companyName phone');
 
+        // Actual package breakdown (with the packaging type the customer picked)
+        // so the emails show the real types instead of a hardcoded "cartons".
+        const emailPackages = (booking.shipmentDetails?.packageDetails || []).map((p) => ({
+            description: p.description,
+            packagingType: p.packagingType,
+            quantity: p.quantity,
+            weight: p.weight,
+            volume: p.volume
+        }));
+
         const allRecipients = await getAdminNotificationRecipients();
 
         if (allRecipients.length > 0) {

@@ -87,6 +87,69 @@ const renderShipmentDetails = (data, options = {}) => {
     `;
 };
 
+// Human-readable label for a packaging type value (e.g. "wooden_box" -> "Wooden Box").
+const PACKAGING_TYPE_LABELS = {
+    pallet: 'Pallet',
+    carton: 'Carton',
+    crate: 'Crate',
+    wooden_box: 'Wooden Box',
+    container: 'Container',
+    envelope: 'Envelope',
+    loose_cargo: 'Loose Cargo',
+    loose_tires: 'Loose Tires',
+    '20ft_container': '20FT Container',
+    '40ft_container': '40FT Container'
+};
+
+const formatPackagingType = (type) => {
+    if (!type) return 'N/A';
+    return (
+        PACKAGING_TYPE_LABELS[type] ||
+        String(type).replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+    );
+};
+
+// Renders the actual package breakdown (description, packaging type, qty,
+// weight, volume) from the booking's packageDetails. Returns '' when empty.
+const renderPackageList = (packages = [], options = {}) => {
+    if (!Array.isArray(packages) || packages.length === 0) {
+        return '';
+    }
+    const title = options.title || 'Package Details';
+    const rows = packages
+        .map(
+            (p, i) => `
+            <tr>
+                <td style="padding:8px;border-bottom:1px solid #eee;">${i + 1}</td>
+                <td style="padding:8px;border-bottom:1px solid #eee;">${p.description || '-'}</td>
+                <td style="padding:8px;border-bottom:1px solid #eee;">${formatPackagingType(p.packagingType)}</td>
+                <td style="padding:8px;border-bottom:1px solid #eee;text-align:center;">${p.quantity ?? 0}</td>
+                <td style="padding:8px;border-bottom:1px solid #eee;text-align:right;">${p.weight ?? 0} kg</td>
+                <td style="padding:8px;border-bottom:1px solid #eee;text-align:right;">${p.volume ?? 0} m³</td>
+            </tr>`
+        )
+        .join('');
+
+    return `
+        <div class="info-box">
+            <h3>${title}</h3>
+            <table style="width:100%;border-collapse:collapse;font-size:13px;">
+                <thead>
+                    <tr style="background:#f1f1f1;">
+                        <th style="padding:8px;text-align:left;">#</th>
+                        <th style="padding:8px;text-align:left;">Description</th>
+                        <th style="padding:8px;text-align:left;">Packaging Type</th>
+                        <th style="padding:8px;text-align:center;">Qty</th>
+                        <th style="padding:8px;text-align:right;">Weight</th>
+                        <th style="padding:8px;text-align:right;">Volume</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>
+        </div>
+    `;
+};
+
 // Email templates
 const templates = {
     // ========== BOOKING TEMPLATES ==========
@@ -125,12 +188,12 @@ const templates = {
                             <p><strong>Origin:</strong> ${data.origin || 'N/A'}</p>
                             <p><strong>Destination:</strong> ${data.destination || 'N/A'}</p>
                             <p><strong>Shipment Type:</strong> ${data.shipmentType || 'Not specified'}</p>
-                            <p><strong>Total Cartons:</strong> ${data.totalCartons ?? 0}</p>
-                        ${renderShipmentDetails(data, { title: 'Transport & Cargo Details' })}
+                            <p><strong>Total Packages:</strong> ${data.totalCartons ?? 0}</p>
                             <p><strong>Total Weight:</strong> ${data.totalWeight ?? 0} kg</p>
                             <p><strong>Total Volume:</strong> ${data.totalVolume || 0} m³</p>
                             <p><strong>Requested Date:</strong> ${formatDate(data.requestedDate)}</p>
-                        </div> 
+                        </div>
+                        ${renderPackageList(data.packages, { title: 'Package Details' })}
                         ${renderShipmentDetails(data, { title: 'Shipment Tracking Details' })}
                         
                         <p><strong>Next Steps:</strong> Please review the booking details and provide a price quote within 24 hours.</p>
@@ -176,10 +239,12 @@ const templates = {
                             <p><strong>Booking Number:</strong> ${data.bookingNumber}</p>
                             <p><strong>Origin:</strong> ${data.origin}</p>
                             <p><strong>Destination:</strong> ${data.destination}</p>
-                            <p><strong>Total Items:</strong> ${data.totalCartons} cartons</p>
+                            <p><strong>Total Packages:</strong> ${data.totalCartons}</p>
                             <p><strong>Total Weight:</strong> ${data.totalWeight} kg</p>
                         </div>
-                        
+
+                        ${renderPackageList(data.packages, { title: 'Package Details' })}
+
                         <p><strong>What's Next?</strong></p>
                         <ul>
                             <li>Our logistics team will review your request within 24 hours</li>
