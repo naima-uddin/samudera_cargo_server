@@ -21,21 +21,6 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-// Verify connection configuration
-transporter.verify((error, success) => {
-    if (error) {
-        console.error('❌ SMTP Connection Error:', {
-            message: error.message,
-            code: error.code,
-            command: error.command
-        });
-    } else {
-        console.log('✅ SMTP Server is ready to send emails');
-        console.log(`📧 From: ${process.env.EMAIL_FROM}`);
-        console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL}`);
-    }
-});
-
 const getFrontendUrl = () => {
     return (process.env.FRONTEND_URL || process.env.CLIENT_URL || process.env.NEXT_PUBLIC_FRONTEND_URL || '').replace(/\/$/, '');
 };
@@ -48,10 +33,14 @@ const getTrackingUrl = (trackingNumber) => {
 
 // Helper function to format currency
 const formatCurrency = (amount, currency = 'USD') => {
+    const normalizedCurrency = typeof currency === 'string' ? currency.trim().toUpperCase() : 'USD';
+    const safeCurrency = /^[A-Z]{3}$/.test(normalizedCurrency) ? normalizedCurrency : 'USD';
+    const safeAmount = Number.isFinite(Number(amount)) ? Number(amount) : 0;
+
     return new Intl.NumberFormat('en-US', {
         style: 'currency',
-        currency: currency
-    }).format(amount || 0);
+        currency: safeCurrency
+    }).format(safeAmount);
 };
 
 // Helper function to format date
@@ -666,6 +655,45 @@ const templates = {
             </html>
         `
     }),
+    'invoice-email': (data) => ({
+        subject: `🧾 Invoice ${data.invoiceNumber} from Samudera Traffic Co., Ltd.`,
+        html: `
+            <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto">
+                <h2>Invoice ${data.invoiceNumber}</h2>
+                <p>Hello ${data.customerName || 'Customer'},</p>
+                <p>${data.message || 'Please find your invoice details below.'}</p>
+                <p><strong>Amount:</strong> ${formatCurrency(data.amount, data.currency)}</p>
+                <p><strong>Due Date:</strong> ${formatDate(data.dueDate)}</p>
+                ${data.pdfUrl ? `<p><a href="${data.pdfUrl}">Download invoice PDF</a></p>` : ''}
+                <p>Regards,<br>${data.companyName || 'Samudera Traffic Co., Ltd.'}</p>
+            </div>
+        `
+    }),
+    'payment-received': (data) => ({
+        subject: `✅ Payment Received - Invoice ${data.invoiceNumber}`,
+        html: `
+            <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto">
+                <h2>Payment Received</h2>
+                <p>Hello ${data.customerName || 'Customer'},</p>
+                <p>Payment for invoice <strong>${data.invoiceNumber}</strong> has been received.</p>
+                <p><strong>Amount:</strong> ${formatCurrency(data.amount, data.currency)}</p>
+                <p><strong>Payment Date:</strong> ${data.paymentDate || formatDate(new Date())}</p>
+            </div>
+        `
+    }),
+    'shipment-departed': (data) => ({
+        subject: `🚢 Your Shipment Is On The Way! - ${data.trackingNumber}`,
+        html: `
+            <div style="font-family:Arial,sans-serif;max-width:600px;margin:auto">
+                <h2>Your shipment is on the way</h2>
+                <p>Hello ${data.customerName || 'Customer'},</p>
+                <p>Shipment <strong>${data.trackingNumber}</strong> has departed.</p>
+                <p><strong>Transport:</strong> ${data.transportMode || 'vessel'}</p>
+                <p><strong>Estimated Arrival:</strong> ${data.estimatedArrival ? formatDate(data.estimatedArrival) : 'To be confirmed'}</p>
+                ${data.trackingUrl ? `<p><a href="${data.trackingUrl}">Track your shipment</a></p>` : ''}
+            </div>
+        `
+    }),
     // ========== RECEIVER TEMPLATES ==========
     'receiver-shipment-confirmed': (data) => ({
         subject: `📦 Your Shipment is Confirmed - ${data.trackingNumber}`,
@@ -1169,7 +1197,7 @@ const templates = {
                     </div>
                     <div class="footer">
                         <p>© ${new Date().getFullYear()} Samudera Cargo Logistics. All rights reserved.</p>
-                        <p>Questions? Contact us at tracking@samuderathai.com</p>
+                        <p>Questions? Contact us at ${getSupportAddress()}</p>
                     </div>
                 </div>
             </body>
@@ -1332,7 +1360,7 @@ const templates = {
                         <div class="info-box" style="background: #f0f0f0; border-left-color: #666;">
                             <h4>Need Help?</h4>
                             <p>If you have any questions about your shipment, please contact us at:<br>
-                            <strong>Email:</strong> tracking@samuderathai.com</p>
+                            <strong>Email:</strong> ${getSupportAddress()}</p>
                         </div>
                     </div>
                 </div>
@@ -1392,7 +1420,7 @@ const templates = {
                         <div class="info-box" style="background: #f0f0f0; border-left-color: #666;">
                             <h4>Need Help?</h4>
                             <p>If you have any questions about your shipment, please contact us at:<br>
-                            <strong>Email:</strong> tracking@samuderathai.com</p>
+                            <strong>Email:</strong> ${getSupportAddress()}</p>
                         </div>
                     </div>
                 </div>
@@ -1423,7 +1451,7 @@ const templates = {
                         <h2>Dear ${data.customerName},</h2>
                         <p>You have successfully rejected the quote for booking <strong>${data.bookingNumber}</strong>.</p>
                         <p><strong>Reason provided:</strong> ${data.reason}</p>
-                        <p>Need help? Contact us at <a href="mailto:${data.supportEmail || 'support@samuderathai.com'}">${data.supportEmail || 'support@samuderathai.com'}</a></p>
+                        <p>Need help? Contact us at <a href="mailto:${data.supportEmail || getSupportAddress()}">${data.supportEmail || getSupportAddress()}</a></p>
                     </div>
                 </div>
             </body>
@@ -1720,7 +1748,7 @@ const templates = {
                             <p><strong>Tracking Number:</strong> ${data.trackingNumber}</p>
                             <p><strong>Reason:</strong> ${data.rejectionReason}</p>
                         </div>
-                        <p>If you have questions, please contact us at <a href="mailto:${data.supportEmail || 'support@samuderathai.com'}">${data.supportEmail || 'support@samuderathai.com'}</a>.</p>
+                        <p>If you have questions, please contact us at <a href="mailto:${data.supportEmail || getSupportAddress()}">${data.supportEmail || getSupportAddress()}</a>.</p>
                     </div>
                 </div>
             </body>

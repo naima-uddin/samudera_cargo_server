@@ -12,7 +12,7 @@ const { generateInvoicePDFBuffer } = require('../service/pdfGenerator');
 const { getCompanyInfo } = require('../utils/companyInfo');
 const NewShipment = require('../models/newShipmentModel');
 const ManualShipment = require('../models/manualModel');
-const TRACK_NOTIFICATION_EMAIL = 'tracking@samuderathai.com';
+const TRACK_NOTIFICATION_EMAIL = process.env.TRACKING_EMAIL || process.env.SMTP_USER;
 
 const normalizeEmail = (email) => {
     if (!email || typeof email !== 'string') return null;
@@ -2417,7 +2417,7 @@ exports.sendInvoiceEmail = async (req, res) => {
         }
 
         // Send email
-        await sendEmail({
+        const invoiceEmailResult = await sendEmail({
             to: recipientEmail,
             subject: `🧾 Invoice ${invoice.invoiceNumber} from Samudera Traffic Co., Ltd.`,
             template: 'invoice-email',
@@ -2433,6 +2433,14 @@ exports.sendInvoiceEmail = async (req, res) => {
                 companyName: 'Samudera Traffic Co., Ltd.'
             }
         });
+
+        if (!invoiceEmailResult?.success) {
+            return res.status(502).json({
+                success: false,
+                message: 'Invoice email could not be sent',
+                error: invoiceEmailResult?.error || 'Email provider rejected the message'
+            });
+        }
 
         // Update invoice
         invoice.emailSent = true;

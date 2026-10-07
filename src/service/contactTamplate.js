@@ -3,11 +3,12 @@
 const express = require('express');
 const router = express.Router();
 const nodemailer = require('nodemailer');
+const { getInfoFromAddress, getReplyToAddress } = require('../config/email');
 
 // ========== Email Transporter ==========
 const createTransporter = () => {
   return nodemailer.createTransport({
-    host: process.env.SMTP_HOST || 'mail.samuderathai.com',
+    host: process.env.SMTP_HOST,
     port: parseInt(process.env.SMTP_PORT) || 465,
     secure: process.env.SMTP_SECURE === 'true',
     auth: {
@@ -20,6 +21,7 @@ const createTransporter = () => {
     },
   });
 };
+const transporter = createTransporter();
 
 // ========== Contact ID Generator ==========
 const generateContactId = () => {
@@ -189,18 +191,14 @@ router.post('/contact', async (req, res) => {
 
     // Create email transporter
     console.log('🔧 Creating email transporter...');
-    const transporter = createTransporter();
+    // Reuse the module-level transporter; SMTP connection setup is expensive.
     
-    // Verify transporter
-    await transporter.verify();
-    console.log('✅ SMTP Connection Verified');
-
     // Send email to admin
     console.log('📧 Sending email to ADMIN...');
     console.log('  To:', process.env.ADMIN_EMAIL || process.env.SMTP_USER_INFO);
     
     const adminInfo = await transporter.sendMail({
-      from: `"Samudera Cargo Logistics Contact" <${process.env.SMTP_USER_INFO}>`,
+      from: `"Samudera Cargo Logistics Contact" <${getInfoFromAddress()}>`,
       to: process.env.ADMIN_EMAIL || process.env.SMTP_USER_INFO,
       replyTo: formData.email,
       subject: `📬 New Contact Form - ${contactId} - ${formData.inquiryType}`,
@@ -214,8 +212,9 @@ router.post('/contact', async (req, res) => {
     console.log('  To:', formData.email);
     
     const customerInfo = await transporter.sendMail({
-      from: `"Samudera Cargo Logistics Support" <${process.env.SMTP_USER_INFO}>`,
+      from: `"Samudera Cargo Logistics Support" <${getInfoFromAddress()}>`,
       to: formData.email,
+      replyTo: getReplyToAddress(),
       subject: `We received your message - ${contactId}`,
       html: getCustomerEmailTemplate(formData, contactId)
     });

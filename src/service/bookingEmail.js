@@ -1,9 +1,10 @@
 const nodemailer = require('nodemailer');
 const { SHIPMENT_TYPES, SHIPMENT_STATUS } = require('../constants/productConstants');
+const { getFromAddress } = require('../config/email');
 
 // Create transporter
 const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || 'smtp.gmail.com',
+  host: process.env.SMTP_HOST,
   port: process.env.SMTP_PORT || 587,
   secure: process.env.SMTP_SECURE === 'true',
   auth: {
@@ -15,7 +16,7 @@ const transporter = nodemailer.createTransport({
 exports.sendBookingConfirmation = async ({ booking, customer, charges }) => {
   try {
     const mailOptions = {
-      from: `"Logistics System" <${process.env.SMTP_USER}>`,
+      from: `"Samudera Cargo Logistics" <${getFromAddress()}>`,
       to: customer.email,
       subject: `Booking Confirmation: ${booking.bookingNumber}`,
       html: generateBookingConfirmationEmail(booking, customer, charges)
@@ -32,7 +33,7 @@ exports.sendBookingConfirmation = async ({ booking, customer, charges }) => {
 exports.sendQuotationEmail = async ({ to, quotation, customerName }) => {
   try {
     const mailOptions = {
-      from: `"Logistics System" <${process.env.SMTP_USER}>`,
+      from: `"Samudera Cargo Logistics" <${getFromAddress()}>`,
       to: to,
       subject: `Quotation: ${quotation.quotationNumber}`,
       html: generateQuotationEmail(quotation, customerName)
@@ -56,7 +57,7 @@ exports.sendStatusUpdateEmail = async ({
 }) => {
   try {
     const mailOptions = {
-      from: `"Logistics System" <${process.env.SMTP_USER}>`,
+      from: `"Samudera Cargo Logistics" <${getFromAddress()}>`,
       to: to,
       subject: `Status Update: ${bookingNumber}`,
       html: generateStatusUpdateEmail(
@@ -79,7 +80,7 @@ exports.sendStatusUpdateEmail = async ({
 exports.sendInvoiceEmail = async ({ to, invoice, booking }) => {
   try {
     const mailOptions = {
-      from: `"Logistics System" <${process.env.SMTP_USER}>`,
+      from: `"Samudera Cargo Logistics" <${getFromAddress()}>`,
       to: to,
       subject: `Invoice: ${invoice.invoiceNumber}`,
       html: generateInvoiceEmail(invoice, booking)
@@ -146,7 +147,7 @@ const generateBookingConfirmationEmail = (booking, customer, charges) => {
         </div>
         <div class="footer">
           <p>This is an automated email. Please do not reply.</p>
-          <p>&copy; ${new Date().getFullYear()} Logistics System. All rights reserved.</p>
+          <p>&copy; ${new Date().getFullYear()} Samudera Cargo Logistics. All rights reserved.</p>
         </div>
       </div>
     </body>
@@ -216,7 +217,7 @@ const generateQuotationEmail = (quotation, customerName) => {
         </div>
         <div class="footer">
           <p>This is an automated email. Please do not reply.</p>
-          <p>&copy; ${new Date().getFullYear()} Logistics System. All rights reserved.</p>
+          <p>&copy; ${new Date().getFullYear()} Samudera Cargo Logistics. All rights reserved.</p>
         </div>
       </div>
     </body>
@@ -272,7 +273,7 @@ const generateStatusUpdateEmail = (bookingNumber, trackingNumber, status, previo
         </div>
         <div class="footer">
           <p>This is an automated email. Please do not reply.</p>
-          <p>&copy; ${new Date().getFullYear()} Logistics System. All rights reserved.</p>
+          <p>&copy; ${new Date().getFullYear()} Samudera Cargo Logistics. All rights reserved.</p>
         </div>
       </div>
     </body>
@@ -338,7 +339,7 @@ const generateInvoiceEmail = (invoice, booking) => {
         </div>
         <div class="footer">
           <p>This is an automated email. Please do not reply.</p>
-          <p>&copy; ${new Date().getFullYear()} Logistics System. All rights reserved.</p>
+          <p>&copy; ${new Date().getFullYear()} Samudera Cargo Logistics. All rights reserved.</p>
         </div>
       </div>
     </body>

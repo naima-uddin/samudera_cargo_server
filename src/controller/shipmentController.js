@@ -2305,7 +2305,7 @@ exports.rejectReturnRequest = async (req, res) => {
                     customerName: shipment.customerId.firstName || 'Customer',
                     trackingNumber: shipment.trackingNumber,
                     rejectionReason: rejectionReason,
-                    supportEmail: process.env.SUPPORT_EMAIL || 'support@cargologistics.com'
+                    supportEmail: process.env.SUPPORT_EMAIL || process.env.EMAIL_FROM_INFO || process.env.SMTP_USER_INFO || process.env.SMTP_USER
                 }
             }).catch(err => console.log('Customer notification error:', err.message));
         }

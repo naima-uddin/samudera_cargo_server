@@ -17,19 +17,6 @@ const transporter = nodemailer.createTransport({
 });
 
 // Verify connection configuration
-transporter.verify((error, success) => {
-    if (error) {
-        console.error('❌ SMTP Connection Error:', {
-            message: error.message,
-            code: error.code,
-            command: error.command
-        });
-    } else {
-        console.log('✅ SMTP Server is ready to send emails');
-        console.log(`📧 From: ${process.env.EMAIL_FROM}`);
-        console.log(`🌐 Frontend URL: ${process.env.FRONTEND_URL}`);
-    }
-});
 // Email templates
 const getFrontendUrl = () => {
     return (process.env.FRONTEND_URL || process.env.CLIENT_URL || process.env.NEXT_PUBLIC_FRONTEND_URL || '').replace(/\/$/, '');
@@ -187,7 +174,7 @@ const getReceiverEmailTemplate = (shipment) => {
 };
 
 const getAdminEmailTemplate = (shipment) => {
-    const adminUrl = process.env.EMAIL_REPLY_TO || 'https://samuderathai.com/admin';
+    const adminUrl = `${(process.env.FRONTEND_URL || '').replace(/\/$/, '')}/admin`;
     
     return `
         <!DOCTYPE html>

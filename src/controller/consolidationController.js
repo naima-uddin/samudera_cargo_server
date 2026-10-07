@@ -771,7 +771,7 @@ exports.createConsolidation = async (req, res) => {
             const adminEmailList = [...new Set([
                 ...admins.map(a => a.email).filter(Boolean),
                 process.env.SMTP_USER,
-                'tracking@samuderathai.com'
+                process.env.TRACKING_EMAIL || process.env.SMTP_USER
             ])].filter(Boolean);
 
             for (const adminEmail of adminEmailList) {

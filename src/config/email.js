@@ -12,6 +12,10 @@ const getFromAddress = () => (
   normalize(process.env.EMAIL_FROM || process.env.SMTP_USER)
 );
 
+const getInfoFromAddress = () => (
+  normalize(process.env.EMAIL_FROM_INFO || process.env.SMTP_USER_INFO || getFromAddress())
+);
+
 const getReplyToAddress = () => (
   normalize(process.env.EMAIL_REPLY_TO || getFromAddress())
 );
@@ -33,6 +37,7 @@ const getAdminNotificationAddresses = () => (
 module.exports = {
   getFrontendUrl,
   getFromAddress,
+  getInfoFromAddress,
   getReplyToAddress,
   getSupportAddress,
   getAdminNotificationAddresses

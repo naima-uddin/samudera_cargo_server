@@ -1,5 +1,8 @@
 // 📁 utility/SendEmailUtility.js
 const nodemailer = require('nodemailer');
+const { getFromAddress, getReplyToAddress } = require('../config/email');
+
+let transporter;
 
 async function SendEmailUtility(EmailTo, EmailSubject, EmailText, EmailHTML = null) {
     console.log('📧 SendEmailUtility called:', { 
@@ -18,34 +21,29 @@ async function SendEmailUtility(EmailTo, EmailSubject, EmailText, EmailHTML = nu
 
     try {
         // ✅ Correct Hostinger SMTP configuration
-        const transporter = nodemailer.createTransport({
-            host: process.env.EMAIL_HOST || 'smtp.hostinger.com',
-            port: parseInt(process.env.EMAIL_PORT) || 465, // Hostinger uses 465
-            secure: true, // true for port 465
+        transporter = transporter || nodemailer.createTransport({
+            host: process.env.EMAIL_HOST || process.env.SMTP_HOST,
+            port: parseInt(process.env.EMAIL_PORT || process.env.SMTP_PORT, 10) || 465,
+            secure: process.env.EMAIL_SECURE
+                ? process.env.EMAIL_SECURE === 'true'
+                : process.env.SMTP_SECURE === 'true',
             auth: {
-                user: process.env.EMAIL_USER,
-                pass: process.env.EMAIL_PASSWORD
+                user: process.env.EMAIL_USER || process.env.SMTP_USER,
+                pass: process.env.EMAIL_PASSWORD || process.env.SMTP_PASS
             },
-            tls: {
-                // Do NOT reject unauthorized for Hostinger
-                rejectUnauthorized: false
-            }
+            tls: { rejectUnauthorized: false }
         });
 
-        // Verify SMTP connection first
-        console.log('🔄 Verifying SMTP connection...');
-        await transporter.verify();
-        console.log('✅ SMTP Connection verified!');
-
         const mailOptions = {
-            from: process.env.EMAIL_FROM || '"A2IT HRM" <admin@attendance-system.a2itltd.com>',
+            from: process.env.EMAIL_FROM || `"Samudera Cargo Logistics" <${getFromAddress()}>`,
             to: EmailTo,
+            replyTo: getReplyToAddress(),
             subject: EmailSubject,
             text: EmailText,
             html: EmailHTML || `
                 <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                     <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; color: white; text-align: center;">
-                        <h1 style="margin: 0;">A2IT HRM System</h1>
+                        <h1 style="margin: 0;">Samudera Cargo Logistics</h1>
                     </div>
                     <div style="padding: 30px; background: #f9f9f9;">
                         <h2>${EmailSubject}</h2>
@@ -54,15 +52,14 @@ async function SendEmailUtility(EmailTo, EmailSubject, EmailText, EmailHTML = nu
                         </div>
                     </div>
                     <div style="padding: 20px; background: #eee; text-align: center; font-size: 12px; color: #666;">
-                        © ${new Date().getFullYear()} A2IT Ltd. All rights reserved.
+                        © ${new Date().getFullYear()} Samudera Cargo Logistics. All rights reserved.
                     </div>
                 </div>
             `,
             // Important headers for deliverability
             headers: {
                 'X-Priority': '1',
-                'X-Mailer': 'A2IT HRM',
-                'List-Unsubscribe': '<mailto:admin@attendance-system.a2itltd.com>'
+                'X-Mailer': 'Samudera Cargo Logistics'
             }
         };
 

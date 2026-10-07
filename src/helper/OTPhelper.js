@@ -1,8 +1,9 @@
 const nodemailer = require("nodemailer");
+const { getFromAddress } = require("../config/email");
 
 const createTransporter = () => {
   // Development mode: Use console log instead of real email
-  if (process.env.NODE_ENV === 'development' && !process.env.EMAIL_USER) {
+  if (process.env.NODE_ENV === 'development' && !process.env.SMTP_USER) {
     return {
       sendMail: async (mailOptions) => {
         console.log("\n" + "=".repeat(50));
@@ -19,10 +20,12 @@ const createTransporter = () => {
   
   // Production mode: Send real email
   return nodemailer.createTransport({
-    service: 'gmail',
+    host: process.env.SMTP_HOST,
+    port: Number(process.env.SMTP_PORT) || 465,
+    secure: process.env.SMTP_SECURE === 'true',
     auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS
     }
   });
 };
@@ -83,7 +86,7 @@ const sendRegistrationOTPEmail = async (email, otp, name = "User") => {
           </div>
           <div class="footer">
             <p>This is an automated message. Please do not reply to this email.</p>
-            <p>&copy; ${new Date().getFullYear()} Your App Name. All rights reserved.</p>
+            <p>&copy; ${new Date().getFullYear()} Samudera Cargo Logistics. All rights reserved.</p>
           </div>
         </div>
       </body>
@@ -91,7 +94,7 @@ const sendRegistrationOTPEmail = async (email, otp, name = "User") => {
     `;
     
     const mailOptions = {
-      from: `"Your App" <${process.env.EMAIL_USER || "noreply@yourapp.com"}>`,
+      from: `"Samudera Cargo Logistics" <${getFromAddress()}>`,
       to: email,
       subject: 'Your Registration OTP Code',
       html: html
@@ -130,7 +133,7 @@ const sendPasswordResetOTPEmail = async (email, otp, name = "User") => {
     `;
     
     const mailOptions = {
-      from: `"Your App" <${process.env.EMAIL_USER || "noreply@yourapp.com"}>`,
+      from: `"Samudera Cargo Logistics" <${getFromAddress()}>`,
       to: email,
       subject: 'Password Reset OTP',
       html: html
@@ -152,7 +155,7 @@ const sendWelcomeEmail = async (email, name) => {
     const transporter = createTransporter();
     
     const mailOptions = {
-      from: `"Your App" <${process.env.EMAIL_USER || "noreply@yourapp.com"}>`,
+      from: `"Samudera Cargo Logistics" <${getFromAddress()}>`,
       to: email,
       subject: 'Welcome to Our Platform! 🎉',
       html: `
