@@ -2056,9 +2056,43 @@ const sendConsolidationStatusEmail = async (consolidationData) => {
         // Generate tracking URL
         const trackingUrl = trackingPageUrl || getTrackingUrl(trackingNumber);
 
-        // Determine template and status message
+        // Determine template and status message. Show a customer-facing label
+        // (matching the tracking page) instead of the raw internal consolidation
+        // vocabulary — e.g. "in_progress" -> "Processing", "loaded" -> "Loaded
+        // into Container" — so the email and the tracking page stay consistent.
+        const CONSOLIDATION_STATUS_LABELS = {
+            draft: 'Processing',
+            in_progress: 'Processing',
+            pending: 'Pending',
+            consolidated: 'Consolidated at Warehouse',
+            received_at_warehouse: 'Received at Warehouse',
+            picked_up_from_warehouse: 'Picked up from Warehouse',
+            ready_for_dispatch: 'Ready for Dispatch',
+            loaded: 'Loaded into Container',
+            loaded_into_container: 'Loaded into Container',
+            container_sealed: 'Container Sealed',
+            dispatched: 'Departed Port of Origin',
+            departed_port_of_origin: 'Departed Port of Origin',
+            in_transit: 'In Transit (Sea Freight)',
+            in_transit_sea_freight: 'In Transit (Sea Freight)',
+            arrived: 'Arrived at Destination Port',
+            arrived_at_destination_port: 'Arrived at Destination Port',
+            under_customs_clearance: 'Under Customs Clearance',
+            under_customs_cleared: 'Under Customs Clearance',
+            customs_cleared: 'Customs Cleared',
+            unloaded_from_vessel: 'Unloaded from Vessel',
+            out_for_delivery: 'Out for Delivery',
+            delivered: 'Delivered',
+            completed: 'Completed',
+            on_hold: 'On Hold',
+            cancelled: 'Cancelled',
+            returned: 'Returned'
+        };
+
         let templateName = 'consolidation-status-update';
-        let statusMessage = status.replace(/_/g, ' ').toUpperCase();
+        let statusMessage =
+            CONSOLIDATION_STATUS_LABELS[status] ||
+            status.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
         if (status === 'customs_cleared') {
             templateName = 'consolidation-customs-cleared';
