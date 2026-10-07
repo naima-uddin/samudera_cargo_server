@@ -802,6 +802,12 @@ exports.acceptQuote = async (req, res) => {
             });
         }
 
+        // Snapshot the pre-accept state so we can roll back if the shipment
+        // (the thing the warehouse actually works on) fails to be created.
+        const _priorStatus = booking.status;
+        const _priorPricingStatus = booking.pricingStatus;
+        const _priorTimelineLength = Array.isArray(booking.timeline) ? booking.timeline.length : 0;
+
         // Update booking
         booking.customerResponse = {
             status: 'accepted',
@@ -809,7 +815,7 @@ exports.acceptQuote = async (req, res) => {
             notes: notes,
             ipAddress: req.ip
         };
-        
+
         booking.pricingStatus = 'accepted';
         booking.status = 'booking_confirmed';
         booking.dates.confirmed = new Date();
@@ -1028,6 +1034,30 @@ exports.acceptQuote = async (req, res) => {
             if (shipmentError.code === 11000) {
                 console.error('   Duplicate key error:', shipmentError.keyValue);
             }
+        }
+
+        // If the shipment could not be created, do NOT leave the booking in a
+        // "confirmed but no shipment" state (the warehouse would never see it and
+        // the customer can't track it). Roll the booking back to its quoted state
+        // and return an error so the customer can retry.
+        if (!shipment) {
+            booking.status = _priorStatus;
+            booking.pricingStatus = _priorPricingStatus;
+            booking.customerResponse = undefined;
+            booking.trackingNumber = undefined;
+            if (booking.dates) booking.dates.confirmed = undefined;
+            if (Array.isArray(booking.timeline) && booking.timeline.length > _priorTimelineLength) {
+                booking.timeline.splice(_priorTimelineLength);
+            }
+            try {
+                await booking.save();
+            } catch (rollbackError) {
+                console.error('❌ Booking rollback failed:', rollbackError.message);
+            }
+            return res.status(500).json({
+                success: false,
+                message: 'Could not create the shipment for this booking. No changes were applied — please try again.'
+            });
         }
 
         // ===== STEP 2: CREATE INVOICE AND GENERATE PDF =====
