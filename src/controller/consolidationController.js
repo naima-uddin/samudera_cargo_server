@@ -1300,7 +1300,12 @@ exports.updateConsolidationStatus = async (req, res) => {
     }
 
     // ========== UPDATE CONSOLIDATION ==========
-    if (status === 'on_hold') {
+    // Remember the real journey status before entering any special state
+    // (on_hold / cancelled / returned) so the UI can anchor progress + the
+    // "Done/Upcoming" lists to where the shipment actually was. Don't overwrite
+    // it when moving from one special state to another (e.g. hold -> cancelled).
+    const SPECIAL_STATES = ['on_hold', 'cancelled', 'returned'];
+    if (SPECIAL_STATES.includes(status) && !SPECIAL_STATES.includes(oldStatus)) {
       consolidation.lastActiveStatus = oldStatus;
     }
 
