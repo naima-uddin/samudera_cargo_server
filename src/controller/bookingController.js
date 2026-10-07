@@ -417,6 +417,7 @@ exports.createBooking = async (req, res) => {
                     totalCartons: booking.shipmentDetails?.totalCartons || booking.shipmentDetails?.totalPackages || 0,
                     totalWeight: booking.shipmentDetails?.totalWeight || 0,
                     totalVolume: booking.shipmentDetails?.totalVolume || 0,
+                    packages: emailPackages,
                     requestedDate: new Date().toLocaleString()
                 }
             });
