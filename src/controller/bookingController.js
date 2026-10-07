@@ -437,6 +437,7 @@ exports.createBooking = async (req, res) => {
                     destination: booking.shipmentDetails?.destination || booking.receiver?.address?.country || 'N/A',
                     totalCartons: booking.shipmentDetails?.totalPackages || 0,
                     totalWeight: booking.shipmentDetails?.totalWeight || 0,
+                    packages: emailPackages,
                     supportEmail: process.env.SUPPORT_EMAIL
                 }
             });
