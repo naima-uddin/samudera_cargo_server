@@ -305,12 +305,17 @@ exports.createBooking = async (req, res) => {
         let totalVolume = 0;
 
         if (shipmentDetails?.packageDetails && shipmentDetails.packageDetails.length > 0) {
-            totalPackages = shipmentDetails.packageDetails.length;
+            // Total packages = sum of each line's quantity (NOT the number of
+            // line items), so the saved value and emails match what the customer
+            // sees in the review step (which sums quantities).
+            totalPackages = shipmentDetails.packageDetails.reduce(
+                (sum, item) => sum + (Number(item.quantity) || 0), 0
+            );
             totalWeight = shipmentDetails.packageDetails.reduce(
-                (sum, item) => sum + (item.weight * item.quantity), 0
+                (sum, item) => sum + ((Number(item.weight) || 0) * (Number(item.quantity) || 0)), 0
             );
             totalVolume = shipmentDetails.packageDetails.reduce(
-                (sum, item) => sum + (item.volume * item.quantity), 0
+                (sum, item) => sum + ((Number(item.volume) || 0) * (Number(item.quantity) || 0)), 0
             );
         }
 
@@ -324,7 +329,9 @@ exports.createBooking = async (req, res) => {
             },
             
             serviceType: serviceType || 'standard',
-            
+
+            pickupRequired: req.body.pickupRequired === true,
+
             shipmentDetails: {
                 origin: shipmentDetails?.origin,
                 destination: shipmentDetails?.destination,
@@ -393,7 +400,10 @@ exports.createBooking = async (req, res) => {
                     customerEmail: booking.sender?.email || booking.customer?.email || 'N/A',
                     origin: booking.shipmentDetails?.origin || 'N/A',
                     destination: booking.shipmentDetails?.destination || 'N/A',
-                    shipmentType: booking.shipmentDetails?.shipmentType || booking.courier?.serviceType || 'Not specified',
+                    shipmentType: [booking.shipmentClassification?.mainType, booking.shipmentClassification?.subType]
+                        .filter(Boolean)
+                        .map((v) => String(v).replace(/_/g, ' '))
+                        .join(' - ') || 'Not specified',
                     totalCartons: booking.shipmentDetails?.totalCartons || booking.shipmentDetails?.totalPackages || 0,
                     totalWeight: booking.shipmentDetails?.totalWeight || 0,
                     totalVolume: booking.shipmentDetails?.totalVolume || 0,
@@ -412,8 +422,8 @@ exports.createBooking = async (req, res) => {
                 data: {
                     bookingNumber: booking.bookingNumber,
                     customerName: booking.sender?.name,
-                    origin: booking.sender?.address?.country,
-                    destination: booking.receiver?.address?.country,
+                    origin: booking.shipmentDetails?.origin || booking.sender?.address?.country || 'N/A',
+                    destination: booking.shipmentDetails?.destination || booking.receiver?.address?.country || 'N/A',
                     totalCartons: booking.shipmentDetails?.totalPackages || 0,
                     totalWeight: booking.shipmentDetails?.totalWeight || 0,
                     supportEmail: process.env.SUPPORT_EMAIL

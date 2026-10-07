@@ -196,7 +196,15 @@ const bookingSchema = new mongoose.Schema({
         enum: courierServiceTypes,
         default: 'standard'
     },
-    
+
+    // Whether the customer requested pickup from the sender's location.
+    // Persisted so it survives on the saved booking (pricing uses it for the
+    // pickup fee) instead of being silently dropped by strict schema mode.
+    pickupRequired: {
+        type: Boolean,
+        default: false
+    },
+
     // ===== Shipment Classification =====
     shipmentClassification: {
         mainType: {
