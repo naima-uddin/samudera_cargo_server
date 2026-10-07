@@ -1257,6 +1257,7 @@ if (customerRecipients.length > 0) {
                 data: {
                     bookingNumber: booking.bookingNumber,
                     customerName: booking.sender?.name || 'Customer',
+                    customerEmail: booking.sender?.email || booking.customer?.email || 'N/A',
                     trackingNumber: trackingNumber,
                     origin: booking.shipmentDetails?.origin || 'N/A',
                     destination: booking.shipmentDetails?.destination || 'N/A',
