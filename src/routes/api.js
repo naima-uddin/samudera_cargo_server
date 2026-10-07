@@ -52,8 +52,7 @@ router.post("/admin/setup", userController.createAdmin);
 router.post("/forgot-password", userController.forgotPassword); 
 router.post("/reset-password", userController.resetPassword);        
 router.post("/verify-reset-otp", userController.verifyResetOTP);
-router.post("/resend-reset-otp", userController.resendResetOTP); 
-router.post("/reset-password", userController.resetPassword); 
+router.post("/resend-reset-otp", userController.resendResetOTP);
 // ==================== PROTECTED ROUTES (Authentication Needed) ====================
 // COMMON ROUTES (All Authenticated Users)
 router.get("/getUserprofile", protect, userController.getUserProfile);
@@ -93,22 +92,20 @@ router.get('/my-bookings', protect, bookingController.getMyBookings);
 
 router.get('/my-bookings/summary',protect, bookingController.getMyBookingsSummary);
 
+// NOTE: literal (non-:id) paths MUST be declared before '/my-bookings/:id',
+// otherwise Express treats "invoiceSummary" as an :id value and never reaches here.
+router.get('/my-bookings/invoiceSummary', protect, bookingController.getMyBookingsSummary);
+
 router.get('/my-bookings/:id', protect, bookingController.getMyBookingById);
 
 router.get('/my-bookings/:id/timeline',protect,  bookingController.getMyBookingTimeline);
 
 router.get('/my-bookings/:id/invoice', protect,  bookingController.getMyBookingInvoice);
 
-router.get('/my-bookings/:id/quote', protect,  bookingController.getMyBookingQuote);   
+router.get('/my-bookings/:id/quote', protect,  bookingController.getMyBookingQuote);
 
 router.get(
-    '/my-bookings/invoiceSummary', 
-    protect, 
-    bookingController.getMyBookingsSummary
-);
-
-router.get(
-    '/getMyInvoices/:customerId', 
+    '/getMyInvoices/:customerId',
     protect, 
     bookingController.getInvoicesByCustomer
 );
@@ -143,9 +140,28 @@ router.get(
 );
 
 router.get(
-    '/getinvoice/:shipmentId', 
-    protect, 
-    adminOnly, 
+    '/getinvoice/:shipmentId',
+    protect,
+    adminOnly,
+    bookingController.getInvoiceByShipment
+);
+
+// Distinct, frontend-matching paths. The two legacy '/getinvoice/:x' routes
+// above share one path pattern, so '/getinvoice/:shipmentId' is unreachable
+// (always matched as :bookingId). The frontend invoice service calls
+// '/invoices/booking/:id' and '/invoices/shipment/:id' — declared here so both
+// lookups resolve to the correct controller. Legacy routes kept for safety.
+router.get(
+    '/invoices/booking/:bookingId',
+    protect,
+    adminOnly,
+    bookingController.getInvoiceByBooking
+);
+
+router.get(
+    '/invoices/shipment/:shipmentId',
+    protect,
+    adminOnly,
     bookingController.getInvoiceByShipment
 );
 
